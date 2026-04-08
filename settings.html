@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Paramètres · ProfitDash</title>
+  <meta name="description" content="Paramètres et glossaire du dashboard de rentabilité e-commerce ProfitDash."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#09090b;--surface:#18181b;--surface2:#27272a;--surface3:#3f3f46;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+      --text:#fafafa;--text2:#a1a1aa;--text3:#71717a;
+      --emerald:#10b981;--emerald-dim:rgba(16,185,129,0.12);--emerald-glo:rgba(16,185,129,0.30);
+      --red:#f43f5e;--red-dim:rgba(244,63,94,0.12);
+      --orange:#f97316;--orange-dim:rgba(249,115,22,0.12);
+      --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);
+      --indigo:#818cf8;--amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);
+      --radius:12px;--radius-lg:16px;
+    }
+    html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .anim{animation:fadeUp 0.4s ease both}
+    .a1{animation-delay:.05s}.a2{animation-delay:.10s}.a3{animation-delay:.15s}.a4{animation-delay:.20s}
+
+    /* NAV */
+    .topnav{
+      position:fixed;top:0;left:0;right:0;z-index:500;height:60px;
+      background:rgba(9,9,11,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border2);
+      display:flex;align-items:center;justify-content:space-between;padding:0 26px;
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--emerald),var(--indigo));display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .brand-name{font-size:15px;font-weight:700;letter-spacing:-.3px}
+    .brand-sub{font-size:11px;color:var(--text3)}
+    .nav-right{display:flex;align-items:center;gap:7px}
+    .chip{padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);font-size:11px;color:var(--text2)}
+    .chip-g{border-color:rgba(16,185,129,.4);background:var(--emerald-dim);color:var(--emerald)}
+    .nav-link{
+      padding:6px 12px;border-radius:8px;border:1px solid var(--border2);
+      background:var(--surface2);color:var(--text2);font-size:11px;font-weight:500;
+      text-decoration:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;
+      font-family:'Inter',sans-serif;
+    }
+    .nav-link:hover{border-color:var(--text2);color:var(--text);background:var(--surface3)}
+    .nav-link.active{background:var(--emerald-dim);border-color:var(--emerald);color:var(--emerald)}
+
+    /* SHELL */
+    .shell{padding-top:60px}
+    .main{padding:32px 24px 80px;max-width:1100px;margin:0 auto}
+
+    /* PAGE HEADER */
+    .ph{margin-bottom:32px}
+    .ph-title{font-size:26px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(120deg,#fff 30%,#71717a 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .ph-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+    /* SECTION */
+    .section{margin-bottom:32px}
+    .section-title{
+      font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+      color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:7px;
+      padding-bottom:10px;border-bottom:1px solid var(--border2);
+    }
+
+    /* CARD */
+    .card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:22px;margin-bottom:12px}
+
+    /* SETTINGS GRID */
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+    .setting-item{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+    .setting-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .setting-name{font-size:13px;font-weight:600;color:var(--text)}
+    .setting-desc{font-size:11px;color:var(--text3);line-height:1.5}
+    .setting-control{display:flex;align-items:center;gap:8px;margin-top:4px}
+    .setting-input{
+      background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+      padding:7px 11px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
+      outline:none;width:90px;text-align:right;
+      transition:border-color .15s,box-shadow .15s;
+    }
+    .setting-input:focus{border-color:var(--emerald);box-shadow:0 0 0 3px var(--emerald-dim)}
+    .setting-unit{font-size:12px;color:var(--text3);min-width:20px}
+    .setting-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .badge-green{background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.25)}
+    .badge-orange{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,.25)}
+    .badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
+    .badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(244,63,94,.25)}
+
+    /* SAVE BAR */
+    .save-bar{
+      display:flex;align-items:center;gap:12px;
+      background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);
+      padding:14px 20px;margin-bottom:24px;
+    }
+    .btn-save{
+      padding:9px 20px;border:none;border-radius:9px;
+      background:linear-gradient(135deg,var(--emerald),#059669);
+      color:#fff;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+      cursor:pointer;display:flex;align-items:center;gap:6px;
+      transition:opacity .15s,transform .15s,box-shadow .15s;
+    }
+    .btn-save:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px var(--emerald-glo)}
+    .btn-reset{
+      padding:9px 16px;border:1px solid var(--border2);border-radius:9px;
+      background:transparent;color:var(--text2);font-size:13px;font-weight:500;
+      font-family:'Inter',sans-serif;cursor:pointer;
+      transition:all .15s;
+    }
+    .btn-reset:hover{background:var(--surface2);color:var(--text)}
+    .save-hint{font-size:12px;color:var(--text3);flex:1}
+
+    /* GLOSSARY */
+    .gloss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+    .gloss-item{
+      background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);
+      padding:16px 18px;transition:border-color .15s,transform .15s;
+    }
+    .gloss-item:hover{border-color:var(--text3);transform:translateY(-1px)}
+    .gloss-term{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .gloss-formula{
+      font-size:11px;font-family:'Courier New',monospace;
+      background:var(--surface);border:1px solid var(--border);border-radius:6px;
+      padding:5px 9px;color:var(--emerald);margin:6px 0;
+    }
+    .gloss-def{font-size:12px;color:var(--text2);line-height:1.6}
+    .gloss-tip{
+      font-size:11px;color:var(--amber);margin-top:8px;
+      background:var(--amber-dim);border-radius:6px;padding:6px 9px;
+      display:flex;align-items:flex-start;gap:5px;line-height:1.5;
+    }
+
+    /* FORMULA SECTION */
+    .formula-card{
+      background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-lg);
+      padding:20px;
+    }
+    .formula-row{
+      display:flex;align-items:center;gap:12px;padding:10px 0;
+      border-bottom:1px solid var(--border);
+    }
+    .formula-row:last-child{border:none}
+    .formula-label{font-size:13px;color:var(--text2);min-width:160px;font-weight:500}
+    .formula-eq{font-family:'Courier New',monospace;font-size:12px;color:var(--text3);flex:1}
+    .formula-result{font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:var(--emerald);min-width:80px;text-align:right}
+
+    /* TOAST */
+    .toast{
+      position:fixed;bottom:26px;right:26px;z-index:9999;
+      background:var(--surface);border:1px solid var(--emerald);border-radius:12px;
+      padding:12px 18px;display:flex;align-items:center;gap:8px;
+      font-size:13px;font-weight:500;box-shadow:0 4px 28px rgba(0,0,0,.45);
+      animation:toastIn .3s ease both;
+    }
+
+    /* DATA RESET */
+    .danger-zone{background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.2);border-radius:var(--radius-lg);padding:20px}
+    .danger-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .danger-desc{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6}
+    .btn-danger{
+      padding:8px 16px;border:1px solid var(--red);border-radius:8px;
+      background:var(--red-dim);color:var(--red);font-size:12px;font-weight:600;
+      font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s;
+    }
+    .btn-danger:hover{background:var(--red)}
+    .btn-danger:hover{color:#fff}
+
+    /* MODAL DANGER */
+    .modal-overlay {
+      position:fixed;top:0;left:0;width:100%;height:100%;
+      background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+      z-index:99999;display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity:1;pointer-events:auto; }
+    .alert-modal {
+      background:var(--surface);width:380px;max-width:90%;
+      border-radius:16px;border:1px solid rgba(244,63,94,.2);
+      padding:24px;box-shadow:0 12px 40px rgba(0,0,0,0.5);
+      transform:translateY(16px) scale(0.96);transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+    }
+    .modal-overlay.active .alert-modal { transform:translateY(0) scale(1); }
+    .alert-modal-top { display:flex;gap:16px;margin-bottom:16px; }
+    .alert-modal-icon {
+      width:44px;height:44px;border-radius:50%;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);
+      display:flex;align-items:center;justify-content:center;color:var(--red);flex-shrink:0;
+    }
+    .alert-modal-title { font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.2; }
+    .alert-modal-desc { font-size:13px;color:var(--text2);line-height:1.5; }
+    .alert-modal-btns { display:flex;gap:8px;justify-content:flex-end;margin-top:24px; }
+    .btn-mlight {
+      padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:transparent;
+      color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;font-family:'Inter',sans-serif;
+    }
+    .btn-mlight:hover { background:rgba(255,255,255,0.05); }
+    .btn-mred {
+      padding:8px 16px;border-radius:8px;border:none;background:var(--red);
+      color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;font-family:'Inter',sans-serif;
+    }
+    .btn-mred:hover { background:#e11d48; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<nav class="topnav">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">ProfitDash</div>
+      <div class="brand-sub">E-Commerce · High-Ticket</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <a href="dashboard-ecom.html" class="nav-link">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="glossaire.html" class="nav-link">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Glossaire
+    </a>
+    <a href="settings.html" class="nav-link active">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Paramètres
+    </a>
+    <span class="chip" id="nav-count">… entrées</span>
+    <span class="chip chip-g" id="nav-date"></span>
+  </div>
+</nav>
+
+<div class="shell">
+  <div class="main">
+
+    <div class="ph anim">
+      <h1 class="ph-title">Paramètres</h1>
+      <p class="ph-sub">Personnalisez vos paramètres de calcul · Tous les changements s'appliquent immédiatement au dashboard.</p>
+    </div>
+
+    <!-- SAVE BAR -->
+    <div class="save-bar anim a1">
+      <span class="save-hint" id="save-hint">Modifiez les paramètres ci-dessous puis enregistrez.</span>
+      <button class="btn-reset" onclick="resetDefaults()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Réinitialiser
+      </button>
+      <button class="btn-save" onclick="saveSettings()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Enregistrer les paramètres
+      </button>
+    </div>
+
+    <!-- ══ SECTION 1 : PARAMÈTRES FINANCIERS ══ -->
+    <div class="section anim a1">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Paramètres Financiers
+      </div>
+      <div class="settings-grid">
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Frais de Transaction</div>
+              <div class="setting-desc">Pourcentage prélevé par Stripe / PayPal sur chaque vente. Utilisé dans le calcul du profit net.</div>
+            </div>
+            <span class="setting-badge badge-red">Coût</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-fees" min="0" max="20" step="0.1" value="3"/>
+            <span class="setting-unit">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Par défaut : 3% (Stripe standard)</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Objectif ROAS Minimum</div>
+              <div class="setting-desc">Seuil de ROAS en dessous duquel vos campagnes sont considérées comme non rentables.</div>
+            </div>
+            <span class="setting-badge badge-orange">Seuil</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-roas-min" min="0.5" max="20" step="0.1" value="2"/>
+            <span class="setting-unit">×</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Ligne de référence sur le graphique Pub</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Objectif ROAS Excellent</div>
+              <div class="setting-desc">Seuil au-dessus duquel le ROAS est classé "Excellent" (badge 🟢).</div>
+            </div>
+            <span class="setting-badge badge-green">Objectif</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-roas-good" min="1" max="50" step="0.5" value="3"/>
+            <span class="setting-unit">×</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Par défaut : 3× (High-Ticket recommandé)</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Devise d'affichage</div>
+              <div class="setting-desc">Symbole de devise utilisé pour l'affichage de tous les montants dans le dashboard.</div>
+            </div>
+            <span class="setting-badge badge-blue">Affichage</span>
+          </div>
+          <div class="setting-control">
+            <select id="s-currency" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:7px 11px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100px">
+              <option value="EUR">EUR (€)</option>
+              <option value="USD">USD ($)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="CHF">CHF (Fr.)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Marge Objectif Quotidien</div>
+              <div class="setting-desc">Objectif de profit net par jour (pour visualisation future dans le dashboard).</div>
+            </div>
+            <span class="setting-badge badge-green">Objectif</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-daily-target" min="0" step="50" value="500"/>
+            <span class="setting-unit">€/j</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">CPC Maximum Acceptable</div>
+              <div class="setting-desc">Coût par clic au-delà duquel vos campagnes sont trop coûteuses (alerte sur le graphique).</div>
+            </div>
+            <span class="setting-badge badge-red">Alerte</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-cpc-max" min="0.1" max="50" step="0.1" value="3"/>
+            <span class="setting-unit">€</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ SECTION 2 : FORMULES ══ -->
+    <div class="section anim a2">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Formules de Calcul
+      </div>
+      <div class="formula-card">
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--red-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Frais Transaction</div>
+              <div style="font-size:10px;color:var(--text3)">Stripe / PayPal</div>
+            </div>
+          </div>
+          <div class="formula-eq">CA &times; <span id="f-fees-pct" style="color:var(--emerald);font-weight:700">3%</span></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="formula-result" id="f-fees-ex">ex: 90 &euro;</span>
+            <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--red-dim);color:var(--red);border:1px solid rgba(244,63,94,.2)">Co&ucirc;t</span>
+          </div>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--emerald-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Profit Net</div>
+              <div style="font-size:10px;color:var(--text3)">KPI principal</div>
+            </div>
+          </div>
+          <div class="formula-eq">CA &minus; Pub &minus; COGS &minus; Frais</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.2)">&checkmark; KPI #1</span>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--orange-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">ROAS</div>
+              <div style="font-size:10px;color:var(--text3)">Return On Ad Spend</div>
+            </div>
+          </div>
+          <div class="formula-eq">CA &divide; D&eacute;penses Pub</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(249,115,22,.2)">ex: 3.50&times;</span>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Marge Brute</div>
+              <div style="font-size:10px;color:var(--text3)">Avant frais pub</div>
+            </div>
+          </div>
+          <div class="formula-eq">CA &minus; COGS</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--surface2);color:var(--text3)">Info</span>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Taux de Marge</div>
+              <div style="font-size:10px;color:var(--text3)">En % du CA</div>
+            </div>
+          </div>
+          <div class="formula-eq">(Profit Net &divide; CA) &times; 100</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--surface2);color:var(--text3)">Info</span>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Co&ucirc;t / Conversion</div>
+              <div style="font-size:10px;color:var(--blue)">Bient&ocirc;t disponible</div>
+            </div>
+          </div>
+          <div class="formula-eq">Pub &divide; Nb de ventes</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.2)">&agrave; venir</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ RENVOI GLOSSAIRE ══ -->
+    <div class="section anim a3">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Glossaire des Termes
+      </div>
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Consultez le glossaire complet</div>
+          <div style="font-size:12px;color:var(--text3)">Définitions, formules et conseils pour tous les termes e-commerce utilisés dans ce dashboard.</div>
+        </div>
+        <a href="glossaire.html" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;background:var(--emerald-dim);border:1px solid var(--emerald);color:var(--emerald);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          Ouvrir le Glossaire
+        </a>
+      </div>
+    </div>
+
+
+    <!-- ══ SECTION 4 : DONNÉES ══ -->
+    <div class="section anim a4">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Gestion des Données
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <!-- Export / Import -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:7px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Sauvegardes et Exports
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">Exportez vos données pour facturation ou sécurisez vos entrées dans une copie locale (JSON).</div>
+          
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button onclick="exportCSV()" style="padding:7px 13px;border-radius:9px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.07);color:var(--emerald);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <button onclick="exportJSON()" style="padding:7px 13px;border-radius:9px;border:1px solid rgba(129,140,248,.3);background:rgba(129,140,248,.07);color:var(--indigo);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Backup JSON
+            </button>
+            <label style="padding:7px 13px;border-radius:9px;border:1px solid rgba(249,115,22,.3);background:rgba(249,115,22,.07);color:var(--orange);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Restaurer
+              <input type="file" accept=".json" onchange="importJSON(event)" style="display:none"/>
+            </label>
+          </div>
+        </div>
+
+        <!-- Données de test -->
+        <div class="card">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:7px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Données de Démonstration
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">Injecter 40 entrées de test sur 40 jours pour visualiser le dashboard en action.</div>
+          <button class="btn-save" style="width:auto;background:linear-gradient(135deg,var(--orange),#c2410c)" onclick="injectTestData()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Injecter 40 valeurs de test
+          </button>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="danger-zone" style="margin-top:12px">
+        <div class="danger-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Zone de Danger
+        </div>
+        <div class="danger-desc">Cette action supprime <strong>définitivement</strong> toutes les entrées du dashboard enregistrées dans le LocalStorage. Cette opération est irréversible — exportez d'abord si nécessaire.</div>
+        <button class="btn-danger" onclick="showDangerModal()">Supprimer toutes les données</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Danger -->
+<div class="modal-overlay" id="danger-modal">
+  <div class="alert-modal">
+    <div class="alert-modal-top">
+      <div class="alert-modal-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="alert-modal-title">Supprimer les entrées ?</div>
+        <div class="alert-modal-desc">Vous êtes sur le point d'effacer définitivement toutes les données du dashboard enregistrées localement. <strong>Cette action est irréversible.</strong></div>
+      </div>
+    </div>
+    <div class="alert-modal-btns">
+      <button class="btn-mlight" onclick="hideDangerModal()">Annuler</button>
+      <button class="btn-mred" onclick="clearAllData()">Oui, tout supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY   = 'profitdash_v1';
+const SETTINGS_KEY  = 'profitdash_settings_v1';
+
+const DEFAULTS = {
+  fees: 3,
+  roasMin: 2,
+  roasGood: 3,
+  currency: 'EUR',
+  dailyTarget: 500,
+  cpcMax: 3,
+};
+
+function loadSettings() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; }
+  catch { return { ...DEFAULTS }; }
+}
+
+function applyToForm(s) {
+  document.getElementById('s-fees').value        = s.fees;
+  document.getElementById('s-roas-min').value    = s.roasMin;
+  document.getElementById('s-roas-good').value   = s.roasGood;
+  document.getElementById('s-currency').value    = s.currency;
+  document.getElementById('s-daily-target').value= s.dailyTarget;
+  document.getElementById('s-cpc-max').value     = s.cpcMax;
+  updateFormulaPreview(s.fees);
+}
+
+function updateFormulaPreview(fees) {
+  document.getElementById('f-fees-pct').textContent = fees + '%';
+  document.getElementById('f-fees-ex').textContent  = 'ex: ' + (3000 * fees / 100).toFixed(0) + ' €';
+  // update glossary formula
+  const gf = document.querySelectorAll('.gloss-formula');
+  gf.forEach(el => {
+    el.textContent = el.textContent.replace(/\{tauxFrais\}/, fees);
+  });
+}
+
+function saveSettings() {
+  const s = {
+    fees:        parseFloat(document.getElementById('s-fees').value) || 3,
+    roasMin:     parseFloat(document.getElementById('s-roas-min').value) || 2,
+    roasGood:    parseFloat(document.getElementById('s-roas-good').value) || 3,
+    currency:    document.getElementById('s-currency').value,
+    dailyTarget: parseFloat(document.getElementById('s-daily-target').value) || 500,
+    cpcMax:      parseFloat(document.getElementById('s-cpc-max').value) || 3,
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  updateFormulaPreview(s.fees);
+  showToast('Paramètres enregistrés ! Le dashboard utilisera ces valeurs.');
+  document.getElementById('save-hint').textContent = 'Paramètres sauvegardés · Valides dans le dashboard.';
+}
+
+function resetDefaults() {
+  if (!confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) return;
+  localStorage.removeItem(SETTINGS_KEY);
+  applyToForm(DEFAULTS);
+  showToast('Paramètres réinitialisés aux valeurs par défaut.');
+}
+
+function exportCSV() {
+  const settings = loadSettings();
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const hdrs = ['Date','CA (€)','Pub (€)','COGS (€)','Clics','CPC (€)','Frais (€)','Profit (€)','ROAS'];
+  
+  const lines = [hdrs.join(','), ...data.sort((a,b)=>a.date.localeCompare(b.date)).map(r => {
+    const ca=+r.ca||0, pub=+r.pub||0, cogs=+r.cogs||0, clics=+r.clics||0, cpc=+r.cpc||0;
+    const fees = ca * (settings.fees / 100);
+    const profit = ca - pub - cogs - fees;
+    const roas = pub > 0 ? ca / pub : 0;
+    return [r.date, ca, pub, cogs, clics, (cpc||0).toFixed(3), fees.toFixed(2), profit.toFixed(2), roas.toFixed(3)].join(',');
+  })];
+  
+  const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `profitdash_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+function exportJSON() {
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const cleanData = data.map(({id,date,ca,pub,cogs,clics,cpc}) => ({id,date,ca,pub,cogs,clics,cpc}));
+  const blob = new Blob([JSON.stringify(cleanData, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `profitdash_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw '';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      showToast(`${data.length} entrées importées !`);
+      const n = data.length;
+      document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
+    } catch {
+      showToast('Erreur : JSON invalide.', true);
+    }
+  };
+  reader.readAsText(file); e.target.value = '';
+}
+
+function showDangerModal() {
+  document.getElementById('danger-modal').classList.add('active');
+}
+function hideDangerModal() {
+  document.getElementById('danger-modal').classList.remove('active');
+}
+
+function clearAllData() {
+  localStorage.removeItem(STORAGE_KEY);
+  hideDangerModal();
+  showToast('Toutes les données ont été supprimées.', true);
+  
+  // Update nav chips count
+  const n = 0;
+  document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
+}
+
+/* ═══ Inject 40 test entries ═══ */
+function injectTestData() {
+  let existing = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(parsed)) existing = parsed;
+    else if (parsed && Array.isArray(parsed.entries)) existing = parsed.entries;
+  } catch(e) {}
+
+  const rnd = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
+  const entries = [];
+  const today = new Date();
+  const existingDates = new Set(existing.map(e => e.date));
+  
+  let daysInjected = 0;
+  let offset = 0;
+
+  while (daysInjected < 40) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - offset);
+    const dateStr = d.toISOString().slice(0, 10);
+    
+    offset++;
+    
+    if (existingDates.has(dateStr)) continue;
+
+    // Simulate realistic e-com data
+    const isWeekend = [0, 6].includes(d.getDay());
+    const trend = 1 + (40 - daysInjected) * 0.005; 
+    const ca   = rnd(isWeekend ? 1200 : 2000, isWeekend ? 3500 : 6500) * trend;
+    const pub  = rnd(ca * 0.18, ca * 0.32);
+    const cogs = rnd(ca * 0.15, ca * 0.28);
+    const clics = Math.round(rnd(200, 900));
+    const cpc  = +(pub / clics).toFixed(3);
+
+    entries.push({
+      id: Date.now() + daysInjected * 13,
+      date: dateStr,
+      ca: +ca.toFixed(2),
+      pub: +pub.toFixed(2),
+      cogs: +cogs.toFixed(2),
+      clics,
+      cpc,
+    });
+    
+    daysInjected++;
+  }
+
+  const merged = [...existing, ...entries];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  showToast('40 valeurs injectées · Redirection en cours…');
+  setTimeout(() => { window.location.href = 'dashboard-ecom.html'; }, 1200);
+}
+
+function showToast(msg, isErr = false) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:26px;right:26px;z-index:9999;background:var(--surface);border:1px solid ${isErr ? 'var(--red)' : 'var(--emerald)'};border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;box-shadow:0 4px 28px rgba(0,0,0,.45);animation:toastIn .3s ease both;font-family:'Inter',sans-serif;color:var(--text)`;
+  t.innerHTML = `<span style="color:${isErr ? 'var(--red)' : 'var(--emerald)'}">●</span> ${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// Live preview on fees change
+document.getElementById('s-fees').addEventListener('input', function() {
+  updateFormulaPreview(+this.value || 3);
+});
+
+// Nav chips
+(function(){
+  const rows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const n = rows.length;
+  document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
+  const d = new Date();
+  document.getElementById('nav-date').textContent = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+})();
+
+// Init
+const currentSettings = loadSettings();
+applyToForm(currentSettings);
+</script>
+</body>
+</html>
