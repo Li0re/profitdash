@@ -222,7 +222,7 @@
     </div>
   </div>
   <div class="nav-right">
-    <a href="dashboard-ecom.html" class="nav-link">
+    <a href="index.html" class="nav-link">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Dashboard
     </a>
@@ -730,7 +730,7 @@ function injectTestData() {
   const merged = [...existing, ...entries];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   showToast('40 valeurs injectées · Redirection en cours…');
-  setTimeout(() => { window.location.href = 'dashboard-ecom.html'; }, 1200);
+  setTimeout(() => { window.location.href = 'index.html'; }, 1200);
 }
 
 function showToast(msg, isErr = false) {
