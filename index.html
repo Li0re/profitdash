@@ -195,12 +195,19 @@ const dfmt   = s => new Date(s+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-d
 const SK = 'profitdash_v1', SK2 = 'profitdash_settings_v1';
 const loadLS  = () => { try{ return JSON.parse(localStorage.getItem(SK)||'[]'); }catch{ return []; }};
 const saveLS  = a => localStorage.setItem(SK, JSON.stringify(a));
-const loadCfg = () => { try{ return {fees:3,roasMin:2,roasGood:3,...JSON.parse(localStorage.getItem(SK2)||'{}')}; }catch{ return {fees:3,roasMin:2,roasGood:3}; }};
+const loadCfg = () => { try{ return {fees:3,taxes:12.3,otherFees:0.5,fixedCosts:114,roasMin:2,roasGood:3,...JSON.parse(localStorage.getItem(SK2)||'{}')}; }catch{ return {fees:3,taxes:12.3,otherFees:0.5,fixedCosts:114,roasMin:2,roasGood:3}; }};
 
-const mkCalc = feePct => e => {
+const mkCalc = cfg => e => {
   const ca=+e.ca||0, pub=+e.pub||0, cogs=+e.cogs||0, cpc=+e.cpc||0, clics=+e.clics||0;
-  const fees=ca*(feePct/100), profit=ca-pub-cogs-fees, roas=pub>0?ca/pub:0;
-  return {...e,ca,pub,cogs,cpc,clics,fees,profit,roas};
+  const feesAmt=ca*((cfg.fees||0)/100);
+  const otherVarAmt=ca*((cfg.otherFees||0)/100);
+  const taxAmt=ca*((cfg.taxes||0)/100);
+  const grossProfit=ca-pub-cogs-feesAmt-otherVarAmt;
+  const profit=grossProfit-taxAmt; // Net profit
+  const roas=pub>0?ca/pub:0;
+  const grossMarginPct=ca>0?(grossProfit/ca)*100:0;
+  const netMarginPct=ca>0?(profit/ca)*100:0;
+  return {...e,ca,pub,cogs,cpc,clics,feesAmt,otherVarAmt,taxAmt,grossProfit,profit,roas,grossMarginPct,netMarginPct};
 };
 
 /* ── Inline SVG icons ── */
@@ -539,9 +546,9 @@ function DateRangePicker({start, end, onApply}) {
 /* ════════════════ APP ════════════════ */
 function App() {
   const [cfg]  = useState(()=>loadCfg());
-  const calc   = useMemo(()=>mkCalc(cfg.fees),[cfg.fees]);
+  const calc   = useMemo(()=>mkCalc(cfg),[cfg]);
   const [rows, setRows] = useState(()=>loadLS().map(calc));
-  const [form, setForm] = useState({date:toDay(),ca:'',pub:'',cogs:'',clics:'',cpc:''});
+  const [form, setForm] = useState({date:toDay(),product:'',ca:'',pub:'',cogs:'',clics:'',cpc:''});
   const [period, setPeriod] = useState('7d');
   const [cs, setCs] = useState(dBack(30));
   const [ce, setCe] = useState(toDay());
@@ -568,10 +575,22 @@ function App() {
   /* kpis */
   const kpis = useMemo(()=>{
     const ca=filtered.reduce((s,e)=>s+e.ca,0);
-    const pr=filtered.reduce((s,e)=>s+e.profit,0);
     const pb=filtered.reduce((s,e)=>s+e.pub,0);
-    return {ca,pr,roas:pb>0?ca/pb:0};
-  },[filtered]);
+    const cogs=filtered.reduce((s,e)=>s+e.cogs,0);
+    const tx=filtered.reduce((s,e)=>s+e.taxAmt,0);
+    const rawPr=filtered.reduce((s,e)=>s+e.profit,0);
+    
+    // Prorata Frais Fixes
+    const {s,e} = periodBounds;
+    let daysInPeriod = 0;
+    if (s && e) {
+      daysInPeriod = Math.max(1, Math.round((new Date(e+'T12:00:00Z') - new Date(s+'T12:00:00Z'))/86400000) + 1);
+    }
+    const fixedCostsProrata = (cfg.fixedCosts || 0) * (daysInPeriod / 30);
+    const finalProfit = rawPr - fixedCostsProrata;
+
+    return {ca, pb, cogs, tx, rawPr, pr:finalProfit, roas:pb>0?ca/pb:0, fixedCostsProrata, grossProfit: filtered.reduce((s,e)=>s+e.grossProfit,0)};
+  },[filtered, periodBounds, cfg.fixedCosts]);
 
   /* previous period kpis */
   const prevKpis = useMemo(()=>{
@@ -595,8 +614,16 @@ function App() {
     } else return {ca:0,pr:0,roas:0};
     const prev=rows.filter(x=>x.date>=ps&&x.date<=pe);
     const ca=prev.reduce((s,e)=>s+e.ca,0);
-    const pr=prev.reduce((s,e)=>s+e.profit,0);
     const pb=prev.reduce((s,e)=>s+e.pub,0);
+    const rawPr=prev.reduce((s,e)=>s+e.profit,0);
+
+    let daysInPeriod = 0;
+    if (ps && pe) {
+      daysInPeriod = Math.max(1, Math.round((new Date(pe+'T12:00:00Z') - new Date(ps+'T12:00:00Z'))/86400000) + 1);
+    }
+    const fixedCostsProrata = (cfg.fixedCosts || 0) * (daysInPeriod / 30);
+    const pr = rawPr - fixedCostsProrata;
+
     return {ca,pr,roas:pb>0?ca/pb:0};
   },[rows,period,cs,ce]);
 
@@ -615,23 +642,28 @@ function App() {
   /* preview */
   const prev = useMemo(()=>{
     const ca=+form.ca||0,pub=+form.pub||0,cogs=+form.cogs||0;
-    const fees=ca*(cfg.fees/100),profit=ca-pub-cogs-fees,roas=pub>0?ca/pub:0;
-    return {ca,fees,profit,roas};
-  },[form,cfg.fees]);
+    const feesAmt=ca*((cfg.fees||0)/100);
+    const otherVarAmt=ca*((cfg.otherFees||0)/100);
+    const taxAmt=ca*((cfg.taxes||0)/100);
+    const grossProfit=ca-pub-cogs-feesAmt-otherVarAmt;
+    const profit=grossProfit-taxAmt;
+    const roas=pub>0?ca/pub:0;
+    return {ca,feesAmt,otherVarAmt,taxAmt,grossProfit,profit,roas};
+  },[form,cfg]);
 
   const save = ()=>{
     if(!form.date||!form.ca){setToast({msg:'Date et CA requis.',ok:false});return;}
     const e=calc({id:Date.now(),...form});
     const next=[...rows,e];
     setRows(next);
-    saveLS(next.map(({id,date,ca,pub,cogs,clics,cpc})=>({id,date,ca,pub,cogs,clics,cpc})));
-    setForm({date:toDay(),ca:'',pub:'',cogs:'',clics:'',cpc:''});
+    saveLS(next.map(({id,date,product,ca,pub,cogs,clics,cpc})=>({id,date,product,ca,pub,cogs,clics,cpc})));
+    setForm({date:toDay(),product:'',ca:'',pub:'',cogs:'',clics:'',cpc:''});
     setToast({msg:'Enregistré !',ok:true});
   };
   const del = id=>{
     const next=rows.filter(r=>r.id!==id);
     setRows(next);
-    saveLS(next.map(({id,date,ca,pub,cogs,clics,cpc})=>({id,date,ca,pub,cogs,clics,cpc})));
+    saveLS(next.map(({id,date,product,ca,pub,cogs,clics,cpc})=>({id,date,product,ca,pub,cogs,clics,cpc})));
     setToast({msg:'Supprimé.',ok:true});
   };
 
@@ -734,8 +766,12 @@ function App() {
                 Saisie Quotidienne
               </div>
               <div className="fg">
-                <div className="fld full"><label>Date</label>
-                  <input id="f-date" type="date" value={form.date} onChange={e=>sf('date',e.target.value)}/></div>
+                <div className="fld full"><label>Date / Produit</label>
+                  <div style={{display:'flex',gap:10}}>
+                    <input id="f-date" type="date" value={form.date} onChange={e=>sf('date',e.target.value)} style={{flex:1}}/>
+                    <input id="f-product" type="text" placeholder="Nom du produit" value={form.product} onChange={e=>sf('product',e.target.value)} style={{flex:2}}/>
+                  </div>
+                </div>
                 <div className="fld"><label><em>€</em> CA Stripe/PayPal</label>
                   <div className="sfx"><input id="f-ca" type="number" min="0" step="0.01" placeholder="0.00" value={form.ca} onChange={e=>sf('ca',e.target.value)}/><span className="sfx-t">€</span></div></div>
                 <div className="fld"><label>Dépenses Pub</label>
@@ -752,7 +788,7 @@ function App() {
                   <div className="prev-t">Aperçu instantané</div>
                   <div className="prev-g">
                     <div className="prev-c">
-                      <div className="prev-cl">Profit Net estimé</div>
+                      <div className="prev-cl">Bénéfice Net</div>
                       <div className="prev-cv" style={{color:prev.profit>=0?'var(--em)':'var(--rd)'}}>{fmtEUR(prev.profit)}</div>
                     </div>
                     <div className="prev-c">
@@ -760,8 +796,8 @@ function App() {
                       <div className="prev-cv" style={{color:prev.roas>=cfg.roasGood?'var(--em)':prev.roas>=cfg.roasMin?'var(--or)':'var(--rd)'}}>{fmtN(prev.roas,2)}×</div>
                     </div>
                     <div className="prev-c" style={{gridColumn:'1/-1'}}>
-                      <div className="prev-cl">Frais transaction ({cfg.fees}%) inclus</div>
-                      <div className="prev-cv" style={{fontSize:14,color:'var(--tx3)'}}>− {fmtEUR(prev.fees)}</div>
+                      <div className="prev-cl">Marge Brute ~{fmtN(prev.ca>0?prev.grossProfit/prev.ca*100:0,1)}%</div>
+                      <div className="prev-cv" style={{fontSize:14,color:'var(--tx3)'}}>{fmtEUR(prev.grossProfit)}  (hors impôts)</div>
                     </div>
                   </div>
                 </div>
@@ -791,9 +827,9 @@ function App() {
                 <div className="kico" style={{background:kpis.pr>=0?'var(--em2)':'var(--rd2)'}}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={kpis.pr>=0?'var(--em)':'var(--rd)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V22H4a2 2 0 01-2-2V8a2 2 0 012-2h16a2 2 0 012 2v4z"/><path d="M18 12a2 2 0 000 4h4v-4z"/><path d="M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2"/></svg>
                 </div>
-                <div className="klbl">Profit Net</div>
+                <div className="klbl">Profit Net (Après Impôts)</div>
                 <div className={`kval ${kpis.pr>=0?'g':'r'}`}>{fmtEUR(kpis.pr)}</div>
-                <div className="khnt" style={{display:'flex',alignItems:'center',gap:3}}><IcInfo/> CA−Pub−COGS−{cfg.fees}% <DeltaBadge cur={kpis.pr} prv={prevKpis.pr}/></div>
+                <div className="khnt" style={{display:'flex',alignItems:'center',gap:3,fontSize:11}}><IcInfo/> Bénéfice Brut: {fmtEUR(kpis.grossProfit)} <DeltaBadge cur={kpis.pr} prv={prevKpis.pr}/></div>
               </div>
               <div className="kcard ko">
                 <div className="kico" style={{background:'var(--or2)'}}>
@@ -875,33 +911,46 @@ function App() {
                     <thead>
                       <tr>
                         <th>Date</th>
+                        <th>Produit</th>
                         <th style={{textAlign:'right'}}>CA</th>
+                        <th style={{textAlign:'right'}}>CA Cumul</th>
                         <th style={{textAlign:'right'}}>Pub</th>
                         <th style={{textAlign:'right'}}>COGS</th>
-                        <th style={{textAlign:'right'}}>Frais</th>
+                        <th style={{textAlign:'right'}}>Marges (%)</th>
                         <th style={{textAlign:'right'}}>Profit Net</th>
                         <th style={{textAlign:'center'}}>ROAS</th>
-                        <th style={{textAlign:'right'}}>CPC</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...filtered].reverse().map(e=>{
-                        const rc = e.roas>=cfg.roasGood?'rp-g':e.roas>=cfg.roasMin?'rp-o':'rp-r';
-                        return (
-                          <tr key={e.id}>
-                            <td className="td-date">{dfmt(e.date)}</td>
-                            <td className="gt" style={{textAlign:'right'}}>{fmtEUR(e.ca)}</td>
-                            <td className="rt" style={{textAlign:'right'}}>{fmtEUR(e.pub)}</td>
-                            <td className="ot" style={{textAlign:'right'}}>{fmtEUR(e.cogs)}</td>
-                            <td style={{textAlign:'right',color:'var(--tx3)'}}>{fmtEUR(e.fees)}</td>
-                            <td style={{textAlign:'right'}} className={e.profit>=0?'gt':'rt'}>{fmtEUR(e.profit)}</td>
-                            <td style={{textAlign:'center'}}><span className={`roas-pill ${rc}`}>{fmtN(e.roas,2)}×</span></td>
-                            <td style={{textAlign:'right',color:'var(--tx3)'}}>{e.cpc?`${fmtN(e.cpc,2)} €`:'—'}</td>
-                            <td><button className="bdel" onClick={()=>del(e.id)} title="Supprimer"><IcTrash/></button></td>
-                          </tr>
-                        );
-                      })}
+                      {(()=>{
+                        let caCumul = 0;
+                        const sortedFiltered = [...filtered].sort((a,b)=>a.date.localeCompare(b.date));
+                        const rowsWithCumul = sortedFiltered.map(e => {
+                          caCumul += e.ca;
+                          return {...e, caCumul};
+                        });
+                        return rowsWithCumul.reverse().map(e => {
+                          const rc = e.roas>=cfg.roasGood?'rp-g':e.roas>=cfg.roasMin?'rp-o':'rp-r';
+                          return (
+                            <tr key={e.id}>
+                              <td className="td-date">{dfmt(e.date)}</td>
+                              <td style={{color:'var(--tx)'}}>{e.product||'—'}</td>
+                              <td className="gt" style={{textAlign:'right'}}>{fmtEUR(e.ca)}</td>
+                              <td style={{textAlign:'right',color:'var(--tx3)'}}>{fmtEUR(e.caCumul)}</td>
+                              <td className="rt" style={{textAlign:'right'}}>{fmtEUR(e.pub)}</td>
+                              <td className="ot" style={{textAlign:'right'}}>{fmtEUR(e.cogs)}</td>
+                              <td style={{textAlign:'right'}}>
+                                <div style={{fontSize:11,color:'var(--tx3)'}}>{fmtN(e.grossMarginPct,1)}% (B)</div>
+                                <div style={{fontSize:11,color:e.netMarginPct>=0?'var(--em)':'var(--rd)'}}>{fmtN(e.netMarginPct,1)}% (N)</div>
+                              </td>
+                              <td style={{textAlign:'right'}} className={e.profit>=0?'gt':'rt'}>{fmtEUR(e.profit)}</td>
+                              <td style={{textAlign:'center'}}><span className={`roas-pill ${rc}`}>{fmtN(e.roas,2)}×</span></td>
+                              <td><button className="bdel" onClick={()=>del(e.id)} title="Supprimer"><IcTrash/></button></td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>

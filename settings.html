@@ -362,6 +362,60 @@
       </div>
     </div>
 
+    <!-- ══ SECTION 1.5 : IMPOSITIONS & AUTRES FRAIS ══ -->
+    <div class="section anim a1" style="animation-delay:.07s">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="6" y1="16" x2="6" y2="16"/><line x1="10" y1="12" x2="18" y2="12"/><line x1="10" y1="16" x2="18" y2="16"/></svg>
+        Taxes & Frais Fixes
+      </div>
+      <div class="settings-grid">
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">URSSAF / Impôts</div>
+              <div class="setting-desc">Taux prélevé sur votre CA (auto-entrepreneur, etc.).</div>
+            </div>
+            <span class="setting-badge badge-red">Taxe</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-taxes" min="0" max="50" step="0.1" value="12.3"/>
+            <span class="setting-unit">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Calcule le Profit Net d'impôts</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Autres Frais Variables</div>
+              <div class="setting-desc">Exemple: Packaging, pourcentage additionnel divers.</div>
+            </div>
+            <span class="setting-badge badge-red">Variable</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-other-fees" min="0" max="20" step="0.1" value="0.5"/>
+            <span class="setting-unit">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Calcule le Profit Brut</div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Frais Fixes Mensuels</div>
+              <div class="setting-desc">Abonnements logiciels, forfaits fixes (Shopify, Apps...).</div>
+            </div>
+            <span class="setting-badge badge-red">Fixe</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-fixed-costs" min="0" step="1" value="114"/>
+            <span class="setting-unit">€/m</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">Déduit au prorata de la période</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ SECTION 2 : FORMULES ══ -->
     <div class="section anim a2">
       <div class="section-title">
@@ -393,12 +447,26 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
             </span>
             <div>
-              <div class="formula-label">Profit Net</div>
-              <div style="font-size:10px;color:var(--text3)">KPI principal</div>
+              <div class="formula-label">Bénéfice Brut</div>
+              <div style="font-size:10px;color:var(--text3)">Marge avant impôts</div>
             </div>
           </div>
-          <div class="formula-eq">CA &minus; Pub &minus; COGS &minus; Frais</div>
-          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.2)">&checkmark; KPI #1</span>
+          <div class="formula-eq">CA &minus; Pub &minus; COGS &minus; Frais(Transac + Autres)</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.2)">&checkmark; Brut</span>
+        </div>
+
+        <div class="formula-row">
+          <div style="display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="width:28px;height:28px;border-radius:8px;background:var(--emerald-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+            </span>
+            <div>
+              <div class="formula-label">Bénéfice Après Impôts</div>
+              <div style="font-size:10px;color:var(--text3)">KPI principal net</div>
+            </div>
+          </div>
+          <div class="formula-eq">Bénéfice Brut &minus; URSSAF/Impôts</div>
+          <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.2)">&checkmark; Net</span>
         </div>
 
         <div class="formula-row">
@@ -564,6 +632,9 @@ const SETTINGS_KEY  = 'profitdash_settings_v1';
 
 const DEFAULTS = {
   fees: 3,
+  taxes: 12.3,
+  otherFees: 0.5,
+  fixedCosts: 114,
   roasMin: 2,
   roasGood: 3,
   currency: 'EUR',
@@ -577,7 +648,10 @@ function loadSettings() {
 }
 
 function applyToForm(s) {
-  document.getElementById('s-fees').value        = s.fees;
+  document.getElementById('s-fees').value        = s.fees !== undefined ? s.fees : 3;
+  document.getElementById('s-taxes').value       = s.taxes !== undefined ? s.taxes : DEFAULTS.taxes;
+  document.getElementById('s-other-fees').value  = s.otherFees !== undefined ? s.otherFees : DEFAULTS.otherFees;
+  document.getElementById('s-fixed-costs').value = s.fixedCosts !== undefined ? s.fixedCosts : DEFAULTS.fixedCosts;
   document.getElementById('s-roas-min').value    = s.roasMin;
   document.getElementById('s-roas-good').value   = s.roasGood;
   document.getElementById('s-currency').value    = s.currency;
@@ -598,7 +672,10 @@ function updateFormulaPreview(fees) {
 
 function saveSettings() {
   const s = {
-    fees:        parseFloat(document.getElementById('s-fees').value) || 3,
+    fees:        parseFloat(document.getElementById('s-fees').value) || 0,
+    taxes:       parseFloat(document.getElementById('s-taxes').value) || 0,
+    otherFees:   parseFloat(document.getElementById('s-other-fees').value) || 0,
+    fixedCosts:  parseFloat(document.getElementById('s-fixed-costs').value) || 0,
     roasMin:     parseFloat(document.getElementById('s-roas-min').value) || 2,
     roasGood:    parseFloat(document.getElementById('s-roas-good').value) || 3,
     currency:    document.getElementById('s-currency').value,
@@ -621,14 +698,17 @@ function resetDefaults() {
 function exportCSV() {
   const settings = loadSettings();
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const hdrs = ['Date','CA (€)','Pub (€)','COGS (€)','Clics','CPC (€)','Frais (€)','Profit (€)','ROAS'];
+  const hdrs = ['Date','Produit','CA (€)','Pub (€)','COGS (€)','Clics','CPC (€)','Frais Stripe (€)','Autres Frais (€)','Bénéf Brut (€)','URSSAF (€)','Bénéf Net (€)','ROAS'];
   
   const lines = [hdrs.join(','), ...data.sort((a,b)=>a.date.localeCompare(b.date)).map(r => {
     const ca=+r.ca||0, pub=+r.pub||0, cogs=+r.cogs||0, clics=+r.clics||0, cpc=+r.cpc||0;
-    const fees = ca * (settings.fees / 100);
-    const profit = ca - pub - cogs - fees;
+    const feesAmt = ca * ((settings.fees||0) / 100);
+    const otherVarAmt = ca * ((settings.otherFees||0) / 100);
+    const taxAmt = ca * ((settings.taxes||0) / 100);
+    const grossProfit = ca - pub - cogs - feesAmt - otherVarAmt;
+    const netProfit = grossProfit - taxAmt;
     const roas = pub > 0 ? ca / pub : 0;
-    return [r.date, ca, pub, cogs, clics, (cpc||0).toFixed(3), fees.toFixed(2), profit.toFixed(2), roas.toFixed(3)].join(',');
+    return [r.date, r.product || '-', ca, pub, cogs, clics, (cpc||0).toFixed(3), feesAmt.toFixed(2), otherVarAmt.toFixed(2), grossProfit.toFixed(2), taxAmt.toFixed(2), netProfit.toFixed(2), roas.toFixed(3)].join(',');
   })];
   
   const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
@@ -638,7 +718,7 @@ function exportCSV() {
 
 function exportJSON() {
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const cleanData = data.map(({id,date,ca,pub,cogs,clics,cpc}) => ({id,date,ca,pub,cogs,clics,cpc}));
+  const cleanData = data.map(({id,date,product,ca,pub,cogs,clics,cpc}) => ({id,date,product,ca,pub,cogs,clics,cpc}));
   const blob = new Blob([JSON.stringify(cleanData, null, 2)], {type: 'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `profitdash_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -717,6 +797,7 @@ function injectTestData() {
     entries.push({
       id: Date.now() + daysInjected * 13,
       date: dateStr,
+      product: 'Testing Produit ' + Math.ceil(Math.random()*3),
       ca: +ca.toFixed(2),
       pub: +pub.toFixed(2),
       cogs: +cogs.toFixed(2),
