@@ -708,7 +708,8 @@ function exportCSV() {
     const grossProfit = ca - pub - cogs - feesAmt - otherVarAmt;
     const netProfit = grossProfit - taxAmt;
     const roas = pub > 0 ? ca / pub : 0;
-    return [r.date, r.product || '-', ca, pub, cogs, clics, (cpc||0).toFixed(3), feesAmt.toFixed(2), otherVarAmt.toFixed(2), grossProfit.toFixed(2), taxAmt.toFixed(2), netProfit.toFixed(2), roas.toFixed(3)].join(',');
+    const pName = (r.product || '-').replace(/"/g, '""');
+    return [r.date, `"${pName}"`, ca, pub, cogs, clics, (cpc||0).toFixed(3), feesAmt.toFixed(2), otherVarAmt.toFixed(2), grossProfit.toFixed(2), taxAmt.toFixed(2), netProfit.toFixed(2), roas.toFixed(3)].join(',');
   })];
   
   const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
