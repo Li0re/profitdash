@@ -33,11 +33,16 @@
     @keyframes drawLine{from{stroke-dashoffset:3000;}to{stroke-dashoffset:0;}}
     @keyframes growBar{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
     @keyframes rowIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes pulse-ring{0%{transform:scale(.33);opacity:1}80%,100%{opacity:0}}
     .fu{animation:fu .4s ease both}
-    .fu1{animation-delay:.05s}.fu2{animation-delay:.11s}.fu3{animation-delay:.18s}
+    .fu1{animation-delay:.05s}.fu2{animation-delay:.11s}.fu3{animation-delay:.18s}.fu4{animation-delay:.25s}
     .anim-path{stroke-dasharray:3000;animation:drawLine 1.8s cubic-bezier(0.16,1,0.3,1) forwards}
     .anim-bar{transform-origin:bottom;animation:growBar .8s cubic-bezier(0.16,1,0.3,1) both}
     .anim-row{animation:rowIn .4s cubic-bezier(0.16,1,0.3,1) both}
+    .shimmer-text{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);background-size:200% 100%;animation:shimmer 3s infinite;background-clip:text;-webkit-background-clip:text}
+    .btn-save.success{background:var(--em);transform:scale(1.02);box-shadow:0 0 20px rgba(16,185,129,0.4)}
+    .tip-box{transition:left 0.15s cubic-bezier(0.23, 1, 0.32, 1), top 0.15s cubic-bezier(0.23, 1, 0.32, 1)}
     /* NAV */
     .nav{position:fixed;top:0;left:0;right:0;z-index:500;height:60px;
       background:rgba(9,9,11,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -133,8 +138,10 @@
     .krow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
     @media(max-width:700px){.krow{grid-template-columns:1fr}}
     .kcard{background:var(--sf);border:1px solid var(--bd2);border-radius:var(--rl);
-      padding:20px 22px;position:relative;overflow:hidden;transition:all .25s cubic-bezier(0.16,1,0.3,1)}
-    .kcard:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.3);border-color:var(--tx3)}
+      padding:20px 22px;position:relative;overflow:hidden;transition:all .3s cubic-bezier(0.16,1,0.3,1)}
+    .kcard:hover{transform:translateY(-4px);box-shadow:0 15px 40px rgba(0,0,0,.45);border-color:rgba(255,255,255,0.25)}
+    .kcard:hover .kico{transform:scale(1.1) rotate(5deg)}
+    .kico{transition:transform .3s ease}
     .kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
     .kg::before{background:linear-gradient(90deg,var(--em),transparent)}
     .kr::before{background:linear-gradient(90deg,var(--rd),transparent)}
@@ -320,9 +327,9 @@ function AreaChart({data, h=280}) {
     const left = Math.min(Math.max(tip.x - 78, 4), wrapW - 162);
     const top  = Math.max(4, tip.y - 108);
     return (
-      <div style={{position:'absolute',left,top,background:'rgba(18,18,20,.96)',border:'1px solid rgba(255,255,255,0.1)',
-        borderRadius:12,padding:'10px 14px',fontSize:12,pointerEvents:'none',zIndex:50,
-        backdropFilter:'blur(10px)',boxShadow:'0 10px 30px rgba(0,0,0,.65)',minWidth:155}}>
+      <div className="tip-box" style={{position:'absolute',left,top,background:'rgba(18,18,20,.94)',border:'1px solid rgba(255,255,255,0.12)',
+        borderRadius:14,padding:'12px 14px',fontSize:12,pointerEvents:'none',zIndex:50,
+        backdropFilter:'blur(12px)',boxShadow:'0 15px 35px rgba(0,0,0,.6)',minWidth:160}}>
         <div style={{fontWeight:700,marginBottom:8,color:'#e4e4e7',fontSize:12}}>{dfmt(d.date)}</div>
         <div style={{display:'flex',justifyContent:'space-between',gap:20,marginBottom:4}}>
           <span style={{color:'#71717a'}}>CA Brut</span>
@@ -433,9 +440,9 @@ function BarLineChart({data, roasMin=2, h=280}) {
     const left = Math.min(Math.max(tip.x - 78, 4), wrapW - 162);
     const top  = Math.max(4, tip.y - 118);
     return (
-      <div style={{position:'absolute',left,top,background:'rgba(18,18,20,.96)',border:'1px solid rgba(255,255,255,0.1)',
-        borderRadius:12,padding:'10px 14px',fontSize:12,pointerEvents:'none',zIndex:50,
-        backdropFilter:'blur(10px)',boxShadow:'0 10px 30px rgba(0,0,0,.65)',minWidth:155}}>
+      <div className="tip-box" style={{position:'absolute',left,top,background:'rgba(18,18,20,.96)',border:'1px solid rgba(255,255,255,0.12)',
+        borderRadius:14,padding:'12px 14px',fontSize:12,pointerEvents:'none',zIndex:50,
+        backdropFilter:'blur(12px)',boxShadow:'0 15px 35px rgba(0,0,0,.6)',minWidth:160}}>
         <div style={{fontWeight:700,marginBottom:8,color:'#e4e4e7',fontSize:12}}>{dfmt(d.date)}</div>
         <div style={{display:'flex',justifyContent:'space-between',gap:20,marginBottom:4}}>
           <span style={{color:'#71717a'}}>ROAS</span>
@@ -682,6 +689,7 @@ function App() {
     return {ca,feesAmt,otherVarAmt,taxAmt,grossProfit,profit,roas};
   },[form,cfg]);
 
+  const [saveState, setSaveState] = useState('idle');
   const save = ()=>{
     if(!form.date||!form.ca){setToast({msg:'Date et CA requis.',ok:false});return;}
     const e=calc({id:Date.now(),...form});
@@ -690,6 +698,8 @@ function App() {
     saveLS(next.map(({id,date,product,ca,pub,cogs,clics,cpc})=>({id,date,product,ca,pub,cogs,clics,cpc})));
     setForm({date:toDay(),product:'',ca:'',pub:'',cogs:'',clics:'',cpc:''});
     setToast({msg:'Enregistré !',ok:true});
+    setSaveState('success');
+    setTimeout(()=>setSaveState('idle'), 1500);
   };
   const del = id=>{
     const next=rows.filter(r=>r.id!==id);
@@ -732,8 +742,8 @@ function App() {
       {/* NAV */}
       <nav className="nav">
         <div className="brand">
-          <div className="bi"><IcoUp/></div>
-          <div><div className="bn">ProfitDash</div><div className="bs">E-Commerce · High-Ticket</div></div>
+          <div className="bi sh"><IcoUp/></div>
+          <div><div className="bn shimmer-text">ProfitDash</div><div className="bs">E-Commerce · High-Ticket</div></div>
         </div>
         <div className="nav-r">
           <a href="index.html" className="nlink act"><IcGrid/> Dashboard</a>
@@ -833,8 +843,8 @@ function App() {
                   </div>
                 </div>
               )}
-              <button id="btn-save" className="btn-save" onClick={save}>
-                <IcSave c="#fff"/> Enregistrer la journée
+              <button id="btn-save" className={`btn-save ${saveState==='success'?'success':''}`} onClick={save}>
+                {saveState==='success' ? <><IcCheck c="#fff"/> Succès !</> : <><IcSave c="#fff"/> Enregistrer la journée</>}
               </button>
             </div>
           </div>
