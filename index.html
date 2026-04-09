@@ -44,6 +44,15 @@
     .shimmer-text{color:var(--tx)}
     .btn-save.success{background:var(--em);transform:scale(1.02);box-shadow:0 0 20px rgba(16,185,129,0.4)}
     .tip-box{transition:left 0.15s cubic-bezier(0.23, 1, 0.32, 1), top 0.15s cubic-bezier(0.23, 1, 0.32, 1)}
+    .bg-v{position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;overflow:hidden;pointer-events:none}
+    .blb{position:absolute;width:800px;height:800px;background:var(--em);border-radius:50%;filter:blur(120px);opacity:0.06;animation:vibe 25s infinite alternate ease-in-out;will-change:transform}
+    .blb2{background:var(--bl);width:600px;height:600px;animation-duration:35s;animation-delay:-7s;right:-10%;top:-10%}
+    .blb3{background:var(--in);width:900px;height:900px;animation-duration:45s;animation-delay:-15s;left:20%;bottom:-20%}
+    @keyframes vibe{
+      0%{transform:translate(-5%,-5%) scale(1)}
+      50%{transform:translate(10%,5%) scale(1.05)}
+      100%{transform:translate(-2%,15%) scale(0.95)}
+    }
     /* NAV */
     .nav{
       position:fixed;top:0;left:0;right:0;z-index:900;height:60px;
@@ -748,6 +757,11 @@ function App() {
 
   return (
     <div className="shell">
+      <div className="bg-v">
+        <div className="blb"/>
+        <div className="blb blb2"/>
+        <div className="blb blb3"/>
+      </div>
       {/* NAV */}
       <nav className="nav">
         <div className="brand">
