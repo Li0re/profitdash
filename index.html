@@ -21,6 +21,7 @@
       --rd:#f43f5e;--rd2:rgba(244,63,94,0.14);
       --or:#f97316;--or2:rgba(249,115,22,0.14);
       --bl:#3b82f6;--bl2:rgba(59,130,246,0.14);
+      --in:#818cf8;--r:20px;--rl:28px;
     }
     html{overflow-y:scroll;scrollbar-gutter:stable}
     html,body{min-height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;overflow-x:hidden;width:100%;position:relative}
@@ -28,19 +29,19 @@
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:10px}
     #root{min-height:100vh}
-    @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes ti{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes fu{from{opacity:1;transform:none}to{opacity:1;transform:none}}
+    @keyframes ti{from{opacity:1;transform:none}to{opacity:1;transform:none}}
     @keyframes drawLine{from{stroke-dashoffset:3000;}to{stroke-dashoffset:0;}}
     @keyframes growBar{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
     @keyframes rowIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
     @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
     @keyframes pulse-ring{0%{transform:scale(.33);opacity:1}80%,100%{opacity:0}}
-    .fu{animation:fu 0.6s cubic-bezier(0.16,1,0.3,1) both;will-change:transform,opacity}
-    .fu1{animation-delay:.08s}.fu2{animation-delay:.16s}.fu3{animation-delay:.26s}.fu4{animation-delay:.38s}
-    .anim-path{stroke-dasharray:3000;animation:drawLine 1.8s cubic-bezier(0.16,1,0.3,1) forwards}
-    .anim-bar{transform-origin:bottom;animation:growBar .8s cubic-bezier(0.16,1,0.3,1) both}
-    .anim-row{animation:rowIn .4s cubic-bezier(0.16,1,0.3,1) both}
-    .shimmer-text{background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);background-size:200% 100%;animation:shimmer 3s infinite;background-clip:text;-webkit-background-clip:text}
+    .fu{animation:none}
+    .fu1{animation-delay:0s}.fu2{animation-delay:0s}.fu3{animation-delay:0s}.fu4{animation-delay:0s}
+    .anim-path{stroke-dasharray:0;animation:none}
+    .anim-bar{transform-origin:bottom;animation:none}
+    .anim-row{animation:none}
+    .shimmer-text{color:var(--tx)}
     .btn-save.success{background:var(--em);transform:scale(1.02);box-shadow:0 0 20px rgba(16,185,129,0.4)}
     .tip-box{transition:left 0.15s cubic-bezier(0.23, 1, 0.32, 1), top 0.15s cubic-bezier(0.23, 1, 0.32, 1)}
     /* NAV */
