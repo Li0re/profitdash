@@ -691,8 +691,8 @@ function App() {
     
     return all.map(date => {
       const row = byDate[date];
-      if (row) return {date: row.date, ca: row.ca, profit: row.profit, roas: +(row.roas||0).toFixed(3), cpc: +(row.cpc||0)};
-      return {date, ca: 0, profit: 0, roas: 0, cpc: 0};
+      if (row) return {date: row.date, ca: row.ca, profit: row.profit, roas: +(row.roas||0).toFixed(3), cpc: +(row.cpc||0), pub: +(row.pub||0)};
+      return {date, ca: 0, profit: 0, roas: 0, cpc: 0, pub: 0};
     });
   }, [filtered, periodBounds]);
 
