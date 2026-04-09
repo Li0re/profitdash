@@ -45,9 +45,13 @@
     .btn-save.success{background:var(--em);transform:scale(1.02);box-shadow:0 0 20px rgba(16,185,129,0.4)}
     .tip-box{transition:left 0.15s cubic-bezier(0.23, 1, 0.32, 1), top 0.15s cubic-bezier(0.23, 1, 0.32, 1)}
     /* NAV */
-    .nav{position:fixed;top:0;left:0;right:0;z-index:500;height:60px;
-      background:rgba(9,9,11,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--bd2);display:flex;align-items:center;justify-content:space-between;padding:0 26px}
+    .nav{
+      position:fixed;top:0;left:0;right:0;z-index:900;height:60px;
+      background:rgba(9,9,11,0.65);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      display:flex;align-items:center;justify-content:space-between;padding:0 26px;
+      box-shadow:0 4px 30px rgba(0,0,0,0.1)
+    }
     .brand{display:flex;align-items:center;gap:10px}
     .bi{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--em),var(--in));
       display:flex;align-items:center;justify-content:center;flex-shrink:0}
