@@ -907,17 +907,15 @@ function Dashboard({user}) {
     const unsub = entriesCol(user.uid).onSnapshot(snap=>{
       setRawEntries(snap.docs.map(d=>({...d.data(),id:d.id})));
     });
-    // Migration localStorage → Firebase (une seule fois)
+    // Migration localStorage → Firebase (silencieuse, une seule fois)
     const leg = legacyEntries();
     if(leg.length>0 && !localStorage.getItem('profitdash_migrated')){
-      if(confirm(`${leg.length} entrées locales trouvées. Migrer vers Firebase ?`)){
-        const batch = fbDb.batch();
-        leg.forEach(e=>{ const ref=entriesCol(user.uid).doc(String(e.id)); batch.set(ref,e); });
-        batch.commit().then(()=>{
-          localStorage.setItem('profitdash_migrated','1');
-          localStorage.removeItem('profitdash_v1');
-        });
-      } else { localStorage.setItem('profitdash_migrated','skip'); }
+      localStorage.setItem('profitdash_migrated','1'); // set immédiatement, pas de retry
+      const batch = fbDb.batch();
+      leg.forEach(e=>{ const ref=entriesCol(user.uid).doc(String(e.id)); batch.set(ref,e); });
+      batch.commit()
+        .then(()=>{ localStorage.removeItem('profitdash_v1'); })
+        .catch(err=>console.warn('Migration échouée:',err));
     }
     return unsub;
   },[user]);
