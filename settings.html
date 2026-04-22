@@ -631,7 +631,7 @@
             Données de Démonstration
           </div>
           <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">Injecter 40 entrées de test sur 40 jours pour visualiser le dashboard en action.</div>
-          <button class="btn-save" style="width:auto;background:linear-gradient(135deg,var(--orange),#c2410c)" onclick="injectTestData()">
+          <button class="btn-save" style="width:auto;background:linear-gradient(135deg,var(--orange),#c2410c)" onclick="injectTestData(this)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Injecter 40 valeurs de test
           </button>
@@ -843,36 +843,44 @@ async function clearAllData() {
 }
 
 /* ═══ INJECT TEST DATA ═══ */
-async function injectTestData() {
-  if (!currentUser) return;
-  const snap = await entriesCol(currentUser.uid).get();
-  const existingDates = new Set(snap.docs.map(d => d.data().date));
-  const rnd = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
-  const entries = [];
-  const today = new Date();
-  let daysInjected = 0, offset = 0;
-  while (daysInjected < 40) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - offset);
-    const dateStr = d.toISOString().slice(0, 10);
-    offset++;
-    if (existingDates.has(dateStr)) continue;
-    const isWeekend = [0,6].includes(d.getDay());
-    const trend = 1 + (40 - daysInjected) * 0.005;
-    const ca   = rnd(isWeekend ? 1200 : 2000, isWeekend ? 3500 : 6500) * trend;
-    const pub  = rnd(ca * 0.18, ca * 0.32);
-    const cogs = rnd(ca * 0.15, ca * 0.28);
-    const clics = Math.round(rnd(200, 900));
-    const cpc  = +(pub / clics).toFixed(3);
-    const id = String(Date.now() + daysInjected * 13);
-    entries.push({ id, date: dateStr, product: 'Testing Produit ' + Math.ceil(Math.random()*3), ca: +ca.toFixed(2), pub: +pub.toFixed(2), cogs: +cogs.toFixed(2), clics, cpc, ventes: 0, notes: '' });
-    daysInjected++;
+async function injectTestData(btn) {
+  if (!currentUser) { showToast('Non connecté.', true); return; }
+  btn = btn || document.querySelector('[onclick*="injectTestData"]');
+  btn.disabled = true; btn.textContent = 'Injection…';
+  try {
+    const snap = await entriesCol(currentUser.uid).get();
+    const existingDates = new Set(snap.docs.map(d => d.data().date));
+    const rnd = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
+    const entries = [];
+    const today = new Date();
+    let daysInjected = 0, offset = 0;
+    while (daysInjected < 40) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - offset);
+      const dateStr = d.toISOString().slice(0, 10);
+      offset++;
+      if (existingDates.has(dateStr)) continue;
+      const isWeekend = [0,6].includes(d.getDay());
+      const trend = 1 + (40 - daysInjected) * 0.005;
+      const ca   = rnd(isWeekend ? 1200 : 2000, isWeekend ? 3500 : 6500) * trend;
+      const pub  = rnd(ca * 0.18, ca * 0.32);
+      const cogs = rnd(ca * 0.15, ca * 0.28);
+      const clics = Math.round(rnd(200, 900));
+      const cpc  = +(pub / clics).toFixed(3);
+      const id = String(Date.now() + daysInjected * 13);
+      entries.push({ id, date: dateStr, product: 'Testing Produit ' + Math.ceil(Math.random()*3), ca: +ca.toFixed(2), pub: +pub.toFixed(2), cogs: +cogs.toFixed(2), clics, cpc, ventes: 0, notes: '' });
+      daysInjected++;
+    }
+    const batch = fbDb.batch();
+    entries.forEach(entry => { batch.set(entriesCol(currentUser.uid).doc(entry.id), entry); });
+    await batch.commit();
+    showToast('40 valeurs injectées · Redirection en cours…');
+    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+  } catch(e) {
+    showToast('Erreur injection : ' + e.message, true);
+    console.error('injectTestData', e);
+    btn.disabled = false; btn.textContent = 'Injecter 40 valeurs de test';
   }
-  const batch = fbDb.batch();
-  entries.forEach(entry => { batch.set(entriesCol(currentUser.uid).doc(entry.id), entry); });
-  await batch.commit();
-  showToast('40 valeurs injectées · Redirection en cours…');
-  setTimeout(() => { window.location.href = 'index.html'; }, 1200);
 }
 
 /* ═══ UI HELPERS ═══ */
