@@ -952,7 +952,7 @@ function Dashboard({user}) {
     if (s && e) {
       daysInPeriod = Math.max(1, Math.round((new Date(e+'T12:00:00Z') - new Date(s+'T12:00:00Z'))/86400000) + 1);
     }
-    const fixedCostsProrata = (cfg.fixedCosts || 0) * (daysInPeriod / 30);
+    const fixedCostsProrata = filtered.length > 0 ? (cfg.fixedCosts || 0) * (daysInPeriod / 30) : 0;
     const finalProfit = rawPr - fixedCostsProrata;
 
     return {ca, pb, cogs, tx, rawPr, pr:finalProfit, roas:pb>0?ca/pb:0, fixedCostsProrata, grossProfit:grossP};
@@ -988,7 +988,7 @@ function Dashboard({user}) {
     if (ps && pe) {
       daysInPeriod = Math.max(1, Math.round((new Date(pe+'T12:00:00Z') - new Date(ps+'T12:00:00Z'))/86400000) + 1);
     }
-    const fixedCostsProrata = (cfg.fixedCosts || 0) * (daysInPeriod / 30);
+    const fixedCostsProrata = prev.length > 0 ? (cfg.fixedCosts || 0) * (daysInPeriod / 30) : 0;
     const pr = rawPr - fixedCostsProrata;
 
     return {ca,pr,roas:pb>0?ca/pb:0};
