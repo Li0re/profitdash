@@ -148,7 +148,7 @@
       padding:7px 10px;color:var(--tx);font-size:13px;font-family:'Inter',sans-serif;
       outline:none;width:100%;max-width:100%;min-width:0;transition:border-color .15s,box-shadow .15s}
     .fld input:focus,.fld select:focus{border-color:var(--em);box-shadow:0 0 0 3px var(--em2)}
-    .fld input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
+    @keyframes dpIn{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
     .fld input::placeholder{color:var(--tx3)}
     .sfx{position:relative}.sfx input{padding-right:26px}
     .sfx-t{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--tx3);pointer-events:none}
@@ -868,6 +868,109 @@ function App() {
 }
 
 /* ════════════════ DASHBOARD ════════════════ */
+/* ══════════════ DatePicker ══════════════ */
+function DatePicker({value, onChange}) {
+  const [open, setOpen] = React.useState(false);
+  const [vy, setVy] = React.useState(()=>{ const d=value?new Date(value+'T12:00:00'):new Date(); return d.getFullYear(); });
+  const [vm, setVm] = React.useState(()=>{ const d=value?new Date(value+'T12:00:00'):new Date(); return d.getMonth(); });
+  const ref = React.useRef(null);
+
+  React.useEffect(()=>{
+    if(value){ const d=new Date(value+'T12:00:00'); setVy(d.getFullYear()); setVm(d.getMonth()); }
+  },[value]);
+
+  React.useEffect(()=>{
+    if(!open) return;
+    const h = e=>{ if(ref.current&&!ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[open]);
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const JOURS = ['L','M','M','J','V','S','D'];
+
+  const firstDow = (()=>{ let d=new Date(vy,vm,1).getDay(); return d===0?6:d-1; })();
+  const daysInMonth = new Date(vy,vm+1,0).getDate();
+  const cells = [...Array(firstDow).fill(null), ...Array.from({length:daysInMonth},(_,i)=>i+1)];
+
+  const prev = ()=>{ if(vm===0){setVm(11);setVy(y=>y-1);}else setVm(m=>m-1); };
+  const next = ()=>{ if(vm===11){setVm(0);setVy(y=>y+1);}else setVm(m=>m+1); };
+  const pick = d=>{ if(!d) return; onChange(`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`); setOpen(false); };
+  const goToday = ()=>{ const t=new Date(); setVy(t.getFullYear()); setVm(t.getMonth()); onChange(todayStr); setOpen(false); };
+
+  const display = value ? new Date(value+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}) : 'Sélectionner…';
+
+  const btnBase = {border:'none',background:'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',outline:'none'};
+  const navBtn = {width:28,height:28,borderRadius:7,border:'1px solid rgba(255,255,255,.08)',background:'rgba(255,255,255,.04)',color:'#a1a1aa',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,lineHeight:1};
+
+  return (
+    <div ref={ref} style={{position:'relative',flex:1,minWidth:0}}>
+      <button type="button" onClick={()=>setOpen(o=>!o)} style={{
+        width:'100%',padding:'8px 12px',background:'var(--sf2)',border:`1px solid ${open?'var(--em)':'var(--bd2)'}`,
+        borderRadius:8,color:value?'var(--tx)':'var(--tx3)',fontSize:13,fontFamily:'Inter,sans-serif',cursor:'pointer',
+        display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,
+        boxShadow:open?'0 0 0 3px var(--em2)':'none',transition:'all .15s'
+      }}>
+        <span>{display}</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position:'absolute',top:'calc(100% + 6px)',left:0,zIndex:1200,
+          background:'#16161a',border:'1px solid rgba(255,255,255,.1)',borderRadius:16,
+          padding:'16px',width:268,boxShadow:'0 24px 64px rgba(0,0,0,.8)',
+          animation:'dpIn .18s ease'
+        }}>
+          {/* Month nav */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+            <button type="button" style={navBtn} onClick={prev}>‹</button>
+            <span style={{fontSize:13,fontWeight:700,color:'#f4f4f5',letterSpacing:'-.2px'}}>{MOIS[vm]} {vy}</span>
+            <button type="button" style={navBtn} onClick={next}>›</button>
+          </div>
+
+          {/* Headers */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:4}}>
+            {JOURS.map((j,i)=>(
+              <div key={i} style={{textAlign:'center',fontSize:10,fontWeight:700,color:'#52525b',padding:'3px 0',letterSpacing:'.5px'}}>{j}</div>
+            ))}
+          </div>
+
+          {/* Days */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2}}>
+            {cells.map((d,i)=>{
+              if(!d) return <div key={i}/>;
+              const ds=`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+              const sel=ds===value, tod=ds===todayStr;
+              return (
+                <button key={i} type="button" onClick={()=>pick(d)} style={{
+                  ...btnBase,padding:'6px 2px',borderRadius:8,fontSize:12,
+                  fontWeight:sel||tod?700:400,textAlign:'center',
+                  background:sel?'var(--em)':tod?'rgba(16,185,129,.15)':'transparent',
+                  color:sel?'#fff':tod?'var(--em)':'#d4d4d8',
+                  transition:'background .1s',
+                }}
+                onMouseEnter={e=>{if(!sel)e.currentTarget.style.background='rgba(255,255,255,.08)';}}
+                onMouseLeave={e=>{if(!sel)e.currentTarget.style.background=tod?'rgba(16,185,129,.15)':'transparent';}}
+                >{d}</button>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)'}}>
+            <button type="button" onClick={()=>{onChange('');setOpen(false);}} style={{...btnBase,padding:'5px 12px',border:'1px solid rgba(255,255,255,.08)',borderRadius:7,color:'#71717a',fontSize:11,background:'rgba(255,255,255,.03)'}}>Effacer</button>
+            <button type="button" onClick={goToday} style={{...btnBase,padding:'5px 12px',border:'1px solid rgba(16,185,129,.35)',borderRadius:7,color:'var(--em)',fontSize:11,fontWeight:600,background:'rgba(16,185,129,.1)'}}>Aujourd'hui</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard({user}) {
   const [cfg, setCfg] = useState(DEFAULT_CFG);
   const calc = useMemo(()=>mkCalc(cfg),[cfg]);
@@ -1400,7 +1503,7 @@ function Dashboard({user}) {
               <div className="fg">
                 <div className="fld full"><label>Date / Produit</label>
                   <div style={{display:'flex',gap:10}}>
-                    <input id="f-date" type="date" value={form.date} onChange={e=>sf('date',e.target.value)} style={{flex:1}}/>
+                    <DatePicker value={form.date} onChange={v=>sf('date',v)}/>
                     <input id="f-product" type="text" placeholder="Nom du produit" value={form.product} onChange={e=>sf('product',e.target.value)} style={{flex:2}}/>
                   </div>
                 </div>
