@@ -1093,11 +1093,12 @@ function Dashboard({user}) {
     for(const e of filtered){ ca+=e.ca; pb+=e.pub; cogs+=e.cogs; tx+=e.taxAmt; rawPr+=e.profit; grossP+=e.grossProfit; }
     const cogs_=cogs, tx_=tx; // keep for compat
     
-    // Prorata Frais Fixes
+    // Prorata Frais Fixes (cap e à today pour éviter 27 000 jours avec FAR)
     const {s,e} = periodBounds;
     let daysInPeriod = 0;
     if (s && e) {
-      daysInPeriod = Math.max(1, Math.round((new Date(e+'T12:00:00Z') - new Date(s+'T12:00:00Z'))/86400000) + 1);
+      const eC = e > toDay() ? toDay() : e;
+      daysInPeriod = Math.max(1, Math.round((new Date(eC+'T12:00:00Z') - new Date(s+'T12:00:00Z'))/86400000) + 1);
     }
     const fixedCostsProrata = filtered.length > 0 ? (cfg.fixedCosts || 0) * (daysInPeriod / 30) : 0;
     const finalProfit = rawPr - fixedCostsProrata;
@@ -1323,7 +1324,8 @@ function Dashboard({user}) {
   const dayCount = useMemo(()=>{
     const {s,e} = periodBounds;
     if(!s||!e) return 0;
-    return Math.max(1, Math.round((new Date(e+'T12:00:00Z')-new Date(s+'T12:00:00Z'))/86400000)+1);
+    const eC = e > toDay() ? toDay() : e;
+    return Math.max(1, Math.round((new Date(eC+'T12:00:00Z')-new Date(s+'T12:00:00Z'))/86400000)+1);
   },[periodBounds]);
   const activeDays = filtered.length;
 
@@ -1362,10 +1364,12 @@ function Dashboard({user}) {
   const chartData = useMemo(() => {
     const {s, e} = periodBounds;
     if (!s || !e) return [];
-    
+    // Cap e à aujourd'hui pour éviter de générer des milliers de dates futures
+    const eC = e > toDay() ? toDay() : e;
+
     // Génère les dates en minimisant les soucis de décalage horaire
     const sd = new Date(s+'T12:00:00Z');
-    const ed = new Date(e+'T12:00:00Z');
+    const ed = new Date(eC+'T12:00:00Z');
     const msPerDay = 86400000;
     const len = Math.max(1, Math.round((ed - sd) / msPerDay) + 1);
     const all = [];
