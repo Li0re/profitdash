@@ -363,6 +363,8 @@ const fmtEUR = n => _fmtEUR.format(n);
 const toDay  = () => new Date().toISOString().slice(0,10);
 const dBack  = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
 const mStart = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; };
+const mEnd   = () => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().slice(0,10); };
+const FAR    = '2099-12-31'; // pas de cap supérieur pour entrées futures
 const dfmt   = s => new Date(s+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});
 
 const SK3 = 'profitdash_draft_v1'; // draft reste local
@@ -1029,12 +1031,12 @@ function Dashboard({user}) {
   /* filter & dates */
   const periodBounds = useMemo(()=>{
     let s,e;
-    if(period==='7d'){s=dBack(6);e=toDay();}
-    else if(period==='30d'){s=dBack(29);e=toDay();}
-    else if(period==='90d'){s=dBack(89);e=toDay();}
-    else if(period==='180d'){s=dBack(179);e=toDay();}
-    else if(period==='365d'){s=dBack(364);e=toDay();}
-    else if(period==='month'){s=mStart();e=toDay();}
+    if(period==='7d'){s=dBack(6);e=FAR;}
+    else if(period==='30d'){s=dBack(29);e=FAR;}
+    else if(period==='90d'){s=dBack(89);e=FAR;}
+    else if(period==='180d'){s=dBack(179);e=FAR;}
+    else if(period==='365d'){s=dBack(364);e=FAR;}
+    else if(period==='month'){s=mStart();e=mEnd();}
     else{s=cs;e=ce;}
     return {s,e};
   }, [period, cs, ce]);
