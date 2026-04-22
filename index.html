@@ -1257,15 +1257,15 @@ function Dashboard({user}) {
   };
   /* Export JSON backup */
   const doExportJSON = () => {
-    const bak = { version:1, date:new Date().toISOString(), entries:loadLS(), settings:cfg };
+    const bak = { version:1, date:new Date().toISOString(), entries:rawEntries, settings:cfg };
     download(`profitdash_backup_${toDay()}.json`, JSON.stringify(bak,null,2), 'application/json');
     setToast({msg:'Backup JSON téléchargé',ok:true});
   };
-  /* Import JSON/CSV */
+  /* Import JSON/CSV → Firestore */
   const doImport = e => {
     const f = e.target.files?.[0]; if(!f) return;
     const rd = new FileReader();
-    rd.onload = () => {
+    rd.onload = async () => {
       try{
         const text = rd.result;
         let entries = [];
@@ -1273,25 +1273,24 @@ function Dashboard({user}) {
           const j = JSON.parse(text);
           entries = Array.isArray(j) ? j : (j.entries||[]);
           if(j.settings && confirm('Restaurer aussi les paramètres ?')){
-            localStorage.setItem(SK2, JSON.stringify(j.settings));
+            settingsDoc(user.uid).set({...DEFAULT_CFG,...j.settings});
           }
         } else {
           entries = parseCSV(text).map(r=>({
-            id: Date.now()+Math.random(),
+            id: String(Date.now()+Math.round(Math.random()*9999)),
             date: r.date, product: r.product||'',
             ca:+r.ca||0, pub:+r.pub||0, cogs:+r.cogs||0,
-            clics:+r.clics||0, cpc:+r.cpc||0,
+            clics:+r.clics||0, cpc:+r.cpc||0, ventes:0, notes:'',
           })).filter(r=>r.date);
         }
         if(!entries.length){ setToast({msg:'Aucune entrée valide.',ok:false}); return; }
-        const merge = confirm(`${entries.length} entrée(s) trouvées. OK=fusionner · Annuler=remplacer`);
-        const base = merge ? loadLS() : [];
-        const byKey = {}; base.forEach(r=>byKey[r.id]=r);
-        entries.forEach(r=>{ if(!r.id) r.id=Date.now()+Math.random(); byKey[r.id]=r; });
-        const next = Object.values(byKey).map(calc);
-        setRows(next); persist(next);
-        setToast({msg:`${entries.length} entrée(s) importées.`,ok:true});
-        if(f.name.endsWith('.json')) setTimeout(()=>location.reload(), 800);
+        // Merge with existing (by id)
+        const existingIds = new Set(rawEntries.map(r=>String(r.id)));
+        const toWrite = entries.map(r=>({...r, id:String(r.id||Date.now()+Math.round(Math.random()*9999))}));
+        const batch = fbDb.batch();
+        toWrite.forEach(r=>{ batch.set(entriesCol(user.uid).doc(r.id), r); });
+        await batch.commit();
+        setToast({msg:`${toWrite.length} entrée(s) importées dans Firebase.`,ok:true});
       }catch(err){ setToast({msg:'Erreur: '+err.message,ok:false}); }
     };
     rd.readAsText(f);
