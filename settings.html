@@ -7,7 +7,25 @@
   <meta name="description" content="Paramètres et glossaire du dashboard de rentabilité e-commerce ProfitDash."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey:"AIzaSyDzc9t5dW0bbyrb6SsnrCVaJ0z7B30Z3oI",
+      authDomain:"crm-e-com.firebaseapp.com",
+      projectId:"crm-e-com",
+      storageBucket:"crm-e-com.firebasestorage.app",
+      messagingSenderId:"848703376676",
+      appId:"1:848703376676:web:08541b19d0fd580bce77b1"
+    });
+    const fbAuth = firebase.auth();
+    const fbDb   = firebase.firestore();
+    const entriesCol  = uid => fbDb.collection(`users/${uid}/entries`);
+    const settingsDoc = uid => fbDb.doc(`users/${uid}/meta/settings`);
+  </script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -83,11 +101,15 @@
     .setting-control{display:flex;align-items:center;gap:8px;margin-top:4px}
     .setting-input{
       background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
-      padding:7px 11px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
-      outline:none;width:90px;text-align:right;
-      transition:border-color .15s,box-shadow .15s;
+      padding:8px 12px;color:var(--text);font-size:14px;font-weight:600;font-family:'Inter',sans-serif;
+      outline:none;width:110px;text-align:right;
+      transition:border-color .15s,box-shadow .15s,background .15s;
+      -moz-appearance:textfield;appearance:textfield;
     }
-    .setting-input:focus{border-color:var(--emerald);box-shadow:0 0 0 3px var(--emerald-dim)}
+    .setting-input::-webkit-outer-spin-button,
+    .setting-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .setting-input:hover{border-color:var(--text3);background:var(--surface3)}
+    .setting-input:focus{border-color:var(--emerald);box-shadow:0 0 0 3px var(--emerald-dim);background:var(--surface2)}
     .setting-unit{font-size:12px;color:var(--text3);min-width:20px}
     .setting-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
     .badge-green{background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(16,185,129,.25)}
@@ -236,6 +258,9 @@
     </a>
     <span class="chip" id="nav-count">… entrées</span>
     <span class="chip chip-g" id="nav-date"></span>
+    <div id="nav-user" style="display:none;align-items:center;gap:8px">
+      <img id="nav-avatar" width="28" height="28" style="border-radius:50%;cursor:pointer;border:1.5px solid rgba(255,255,255,.15);object-fit:cover" title="Se déconnecter" onclick="fbAuth.signOut().then(()=>window.location.href='index.html')"/>
+    </div>
   </div>
 </nav>
 
@@ -344,6 +369,21 @@
             <input class="setting-input" type="number" id="s-daily-target" min="0" step="50" value="500"/>
             <span class="setting-unit">€/j</span>
           </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-head">
+            <div>
+              <div class="setting-name">Objectif Profit Mensuel</div>
+              <div class="setting-desc">Cible de profit net par mois. Affiche une barre de progression au prorata de la période sur le dashboard.</div>
+            </div>
+            <span class="setting-badge badge-green">Objectif</span>
+          </div>
+          <div class="setting-control">
+            <input class="setting-input" type="number" id="s-monthly-profit-target" min="0" step="100" value="0"/>
+            <span class="setting-unit">€/m</span>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-style:italic">0 = désactivé</div>
         </div>
 
         <div class="setting-item">
@@ -631,115 +671,143 @@
 </div>
 
 <script>
-const STORAGE_KEY   = 'profitdash_v1';
-const SETTINGS_KEY  = 'profitdash_settings_v1';
+let currentUser = null;
 
 const DEFAULTS = {
-  fees: 3,
-  taxes: 12.3,
-  otherFees: 0.5,
-  fixedCosts: 114,
-  roasMin: 2,
-  roasGood: 3,
-  currency: 'EUR',
-  dailyTarget: 500,
-  cpcMax: 3,
+  fees: 3, taxes: 12.3, otherFees: 0.5, fixedCosts: 114,
+  roasMin: 2, roasGood: 3, currency: 'EUR', dailyTarget: 500,
+  cpcMax: 3, monthlyProfitTarget: 0,
 };
 
-function loadSettings() {
-  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; }
-  catch { return { ...DEFAULTS }; }
-}
+/* ═══ AUTH GUARD ═══ */
+fbAuth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
 
+  // Avatar
+  const av = document.getElementById('nav-avatar');
+  if (av && user.photoURL) {
+    av.src = user.photoURL;
+    av.title = (user.displayName || user.email || '') + ' · Se déconnecter';
+    document.getElementById('nav-user').style.display = 'flex';
+  }
+
+  // Load settings from Firestore
+  settingsDoc(user.uid).get().then(doc => {
+    const s = doc.exists ? { ...DEFAULTS, ...doc.data() } : { ...DEFAULTS };
+    applyToForm(s);
+  });
+
+  // Live entry count
+  entriesCol(user.uid).onSnapshot(snap => {
+    const n = snap.size;
+    document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
+  });
+
+  const d = new Date();
+  document.getElementById('nav-date').textContent = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+});
+
+/* ═══ FORM HELPERS ═══ */
 function applyToForm(s) {
-  document.getElementById('s-fees').value        = s.fees !== undefined ? s.fees : 3;
+  document.getElementById('s-fees').value        = s.fees !== undefined ? s.fees : DEFAULTS.fees;
   document.getElementById('s-taxes').value       = s.taxes !== undefined ? s.taxes : DEFAULTS.taxes;
   document.getElementById('s-other-fees').value  = s.otherFees !== undefined ? s.otherFees : DEFAULTS.otherFees;
   document.getElementById('s-fixed-costs').value = s.fixedCosts !== undefined ? s.fixedCosts : DEFAULTS.fixedCosts;
-  document.getElementById('s-roas-min').value    = s.roasMin;
-  document.getElementById('s-roas-good').value   = s.roasGood;
-  document.getElementById('s-currency').value    = s.currency;
-  document.getElementById('s-daily-target').value= s.dailyTarget;
-  document.getElementById('s-cpc-max').value     = s.cpcMax;
+  document.getElementById('s-roas-min').value    = s.roasMin !== undefined ? s.roasMin : DEFAULTS.roasMin;
+  document.getElementById('s-roas-good').value   = s.roasGood !== undefined ? s.roasGood : DEFAULTS.roasGood;
+  document.getElementById('s-currency').value    = s.currency || DEFAULTS.currency;
+  document.getElementById('s-daily-target').value= s.dailyTarget !== undefined ? s.dailyTarget : DEFAULTS.dailyTarget;
+  document.getElementById('s-cpc-max').value     = s.cpcMax !== undefined ? s.cpcMax : DEFAULTS.cpcMax;
+  document.getElementById('s-monthly-profit-target').value = s.monthlyProfitTarget || 0;
   updateFormulaPreview(s.fees);
+}
+
+function getFormValues() {
+  return {
+    fees:               parseFloat(document.getElementById('s-fees').value) || 0,
+    taxes:              parseFloat(document.getElementById('s-taxes').value) || 0,
+    otherFees:          parseFloat(document.getElementById('s-other-fees').value) || 0,
+    fixedCosts:         parseFloat(document.getElementById('s-fixed-costs').value) || 0,
+    roasMin:            parseFloat(document.getElementById('s-roas-min').value) || 2,
+    roasGood:           parseFloat(document.getElementById('s-roas-good').value) || 3,
+    currency:           document.getElementById('s-currency').value,
+    dailyTarget:        parseFloat(document.getElementById('s-daily-target').value) || 500,
+    cpcMax:             parseFloat(document.getElementById('s-cpc-max').value) || 3,
+    monthlyProfitTarget:parseFloat(document.getElementById('s-monthly-profit-target').value) || 0,
+  };
 }
 
 function updateFormulaPreview(fees) {
   document.getElementById('f-fees-pct').textContent = fees + '%';
   document.getElementById('f-fees-ex').textContent  = 'ex: ' + (3000 * fees / 100).toFixed(0) + ' €';
-  // update glossary formula
-  const gf = document.querySelectorAll('.gloss-formula');
-  gf.forEach(el => {
-    el.textContent = el.textContent.replace(/\{tauxFrais\}/, fees);
-  });
 }
 
+/* ═══ SAVE / RESET ═══ */
 function saveSettings() {
-  const s = {
-    fees:        parseFloat(document.getElementById('s-fees').value) || 0,
-    taxes:       parseFloat(document.getElementById('s-taxes').value) || 0,
-    otherFees:   parseFloat(document.getElementById('s-other-fees').value) || 0,
-    fixedCosts:  parseFloat(document.getElementById('s-fixed-costs').value) || 0,
-    roasMin:     parseFloat(document.getElementById('s-roas-min').value) || 2,
-    roasGood:    parseFloat(document.getElementById('s-roas-good').value) || 3,
-    currency:    document.getElementById('s-currency').value,
-    dailyTarget: parseFloat(document.getElementById('s-daily-target').value) || 500,
-    cpcMax:      parseFloat(document.getElementById('s-cpc-max').value) || 3,
-  };
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  if (!currentUser) return;
+  const s = getFormValues();
+  settingsDoc(currentUser.uid).set(s);
   updateFormulaPreview(s.fees);
   showToast('Paramètres enregistrés ! Le dashboard utilisera ces valeurs.');
   document.getElementById('save-hint').textContent = 'Paramètres sauvegardés · Valides dans le dashboard.';
 }
 
 function resetDefaults() {
+  if (!currentUser) return;
   if (!confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) return;
-  localStorage.removeItem(SETTINGS_KEY);
+  settingsDoc(currentUser.uid).set(DEFAULTS);
   applyToForm(DEFAULTS);
   showToast('Paramètres réinitialisés aux valeurs par défaut.');
 }
 
-function exportCSV() {
-  const settings = loadSettings();
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+/* ═══ EXPORT / IMPORT ═══ */
+async function exportCSV() {
+  if (!currentUser) return;
+  const cfg = getFormValues();
+  const snap = await entriesCol(currentUser.uid).get();
+  const data = snap.docs.map(d => d.data());
   const hdrs = ['Date','Produit','CA (€)','Pub (€)','COGS (€)','Clics','CPC (€)','Frais Stripe (€)','Autres Frais (€)','Bénéf Brut (€)','URSSAF (€)','Bénéf Net (€)','ROAS'];
-  
   const lines = [hdrs.join(','), ...data.sort((a,b)=>a.date.localeCompare(b.date)).map(r => {
     const ca=+r.ca||0, pub=+r.pub||0, cogs=+r.cogs||0, clics=+r.clics||0, cpc=+r.cpc||0;
-    const feesAmt = ca * ((settings.fees||0) / 100);
-    const otherVarAmt = ca * ((settings.otherFees||0) / 100);
-    const taxAmt = ca * ((settings.taxes||0) / 100);
+    const feesAmt     = ca * ((cfg.fees||0) / 100);
+    const otherVarAmt = ca * ((cfg.otherFees||0) / 100);
+    const taxAmt      = ca * ((cfg.taxes||0) / 100);
     const grossProfit = ca - pub - cogs - feesAmt - otherVarAmt;
-    const netProfit = grossProfit - taxAmt;
-    const roas = pub > 0 ? ca / pub : 0;
+    const netProfit   = grossProfit - taxAmt;
+    const roas        = pub > 0 ? ca / pub : 0;
     const pName = (r.product || '-').replace(/"/g, '""');
     return [r.date, `"${pName}"`, ca, pub, cogs, clics, (cpc||0).toFixed(3), feesAmt.toFixed(2), otherVarAmt.toFixed(2), grossProfit.toFixed(2), taxAmt.toFixed(2), netProfit.toFixed(2), roas.toFixed(3)].join(',');
   })];
-  
-  const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `profitdash_${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-function exportJSON() {
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const cleanData = data.map(({id,date,product,ca,pub,cogs,clics,cpc}) => ({id,date,product,ca,pub,cogs,clics,cpc}));
-  const blob = new Blob([JSON.stringify(cleanData, null, 2)], {type: 'application/json'});
+async function exportJSON() {
+  if (!currentUser) return;
+  const snap = await entriesCol(currentUser.uid).get();
+  const data = snap.docs.map(d => d.data());
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `profitdash_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
 }
 
 function importJSON(e) {
-  const file = e.target.files[0]; if(!file) return;
+  if (!currentUser) return;
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if(!Array.isArray(data)) throw '';
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (!Array.isArray(data)) throw '';
+      const batch = fbDb.batch();
+      data.forEach(entry => {
+        const ref = entriesCol(currentUser.uid).doc(String(entry.id || Date.now() + Math.random()));
+        batch.set(ref, entry);
+      });
+      await batch.commit();
       showToast(`${data.length} entrées importées !`);
-      const n = data.length;
-      document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
     } catch {
       showToast('Erreur : JSON invalide.', true);
     }
@@ -747,80 +815,55 @@ function importJSON(e) {
   reader.readAsText(file); e.target.value = '';
 }
 
-function showDangerModal() {
-  document.getElementById('danger-modal').classList.add('active');
-}
-function hideDangerModal() {
-  document.getElementById('danger-modal').classList.remove('active');
-}
+/* ═══ DANGER ZONE ═══ */
+function showDangerModal() { document.getElementById('danger-modal').classList.add('active'); }
+function hideDangerModal()  { document.getElementById('danger-modal').classList.remove('active'); }
 
-function clearAllData() {
-  localStorage.removeItem(STORAGE_KEY);
+async function clearAllData() {
+  if (!currentUser) return;
+  const snap = await entriesCol(currentUser.uid).get();
+  const batch = fbDb.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
   hideDangerModal();
   showToast('Toutes les données ont été supprimées.', true);
-  
-  // Update nav chips count
-  const n = 0;
-  document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
 }
 
-/* ═══ Inject 40 test entries ═══ */
-function injectTestData() {
-  let existing = [];
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(parsed)) existing = parsed;
-    else if (parsed && Array.isArray(parsed.entries)) existing = parsed.entries;
-  } catch(e) {}
-
+/* ═══ INJECT TEST DATA ═══ */
+async function injectTestData() {
+  if (!currentUser) return;
+  const snap = await entriesCol(currentUser.uid).get();
+  const existingDates = new Set(snap.docs.map(d => d.data().date));
   const rnd = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
   const entries = [];
   const today = new Date();
-  const existingDates = new Set(existing.map(e => e.date));
-  
-  let daysInjected = 0;
-  let offset = 0;
-
+  let daysInjected = 0, offset = 0;
   while (daysInjected < 40) {
     const d = new Date(today);
     d.setDate(d.getDate() - offset);
     const dateStr = d.toISOString().slice(0, 10);
-    
     offset++;
-    
     if (existingDates.has(dateStr)) continue;
-
-    // Simulate realistic e-com data
-    const isWeekend = [0, 6].includes(d.getDay());
-    const trend = 1 + (40 - daysInjected) * 0.005; 
+    const isWeekend = [0,6].includes(d.getDay());
+    const trend = 1 + (40 - daysInjected) * 0.005;
     const ca   = rnd(isWeekend ? 1200 : 2000, isWeekend ? 3500 : 6500) * trend;
     const pub  = rnd(ca * 0.18, ca * 0.32);
     const cogs = rnd(ca * 0.15, ca * 0.28);
     const clics = Math.round(rnd(200, 900));
     const cpc  = +(pub / clics).toFixed(3);
-
-    entries.push({
-      id: Date.now() + daysInjected * 13,
-      date: dateStr,
-      product: 'Testing Produit ' + Math.ceil(Math.random()*3),
-      ca: +ca.toFixed(2),
-      pub: +pub.toFixed(2),
-      cogs: +cogs.toFixed(2),
-      clics,
-      cpc,
-    });
-    
+    const id = String(Date.now() + daysInjected * 13);
+    entries.push({ id, date: dateStr, product: 'Testing Produit ' + Math.ceil(Math.random()*3), ca: +ca.toFixed(2), pub: +pub.toFixed(2), cogs: +cogs.toFixed(2), clics, cpc, ventes: 0, notes: '' });
     daysInjected++;
   }
-
-  const merged = [...existing, ...entries];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  const batch = fbDb.batch();
+  entries.forEach(entry => { batch.set(entriesCol(currentUser.uid).doc(entry.id), entry); });
+  await batch.commit();
   showToast('40 valeurs injectées · Redirection en cours…');
   setTimeout(() => { window.location.href = 'index.html'; }, 1200);
 }
 
+/* ═══ UI HELPERS ═══ */
 function showToast(msg, isErr = false) {
-  const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.style.cssText = `position:fixed;bottom:26px;right:26px;z-index:9999;background:var(--surface);border:1px solid ${isErr ? 'var(--red)' : 'var(--emerald)'};border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;box-shadow:0 4px 28px rgba(0,0,0,.45);animation:toastIn .3s ease both;font-family:'Inter',sans-serif;color:var(--text)`;
   t.innerHTML = `<span style="color:${isErr ? 'var(--red)' : 'var(--emerald)'}">●</span> ${msg}`;
@@ -833,18 +876,40 @@ document.getElementById('s-fees').addEventListener('input', function() {
   updateFormulaPreview(+this.value || 3);
 });
 
-// Nav chips
-(function(){
-  const rows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const n = rows.length;
-  document.getElementById('nav-count').textContent = n + ' entrée' + (n !== 1 ? 's' : '');
-  const d = new Date();
-  document.getElementById('nav-date').textContent = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
-})();
-
-// Init
-const currentSettings = loadSettings();
-applyToForm(currentSettings);
+/* ═══ AUTOSAVE ═══ */
+let _autosaveT = null;
+function scheduleAutosave() {
+  clearTimeout(_autosaveT);
+  const hint = document.getElementById('save-hint');
+  if (hint) hint.textContent = 'Modification détectée…';
+  _autosaveT = setTimeout(() => saveSettingsSilent(), 600);
+}
+function saveSettingsSilent() {
+  if (!currentUser) return;
+  const s = getFormValues();
+  settingsDoc(currentUser.uid).set(s);
+  updateFormulaPreview(s.fees);
+  const hint = document.getElementById('save-hint');
+  if (hint) hint.textContent = '✓ Auto-enregistré · ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  showAutoPill();
+}
+function showAutoPill() {
+  let pill = document.getElementById('auto-pill');
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.id = 'auto-pill';
+    pill.style.cssText = 'position:fixed;top:72px;right:24px;z-index:950;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--emerald);font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;opacity:0;transition:opacity .25s;pointer-events:none;font-family:Inter,sans-serif';
+    pill.textContent = '✓ Enregistré';
+    document.body.appendChild(pill);
+  }
+  pill.style.opacity = '1';
+  clearTimeout(pill._t);
+  pill._t = setTimeout(() => pill.style.opacity = '0', 1500);
+}
+document.querySelectorAll('.setting-input, #s-currency').forEach(inp => {
+  inp.addEventListener('input', scheduleAutosave);
+  inp.addEventListener('change', scheduleAutosave);
+});
 </script>
 </body>
 </html>
