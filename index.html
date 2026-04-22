@@ -904,9 +904,10 @@ function Dashboard({user}) {
     // Draft
     try{ const d=JSON.parse(localStorage.getItem(SK3)||'null'); if(d) setForm(f=>({...f,...d})); }catch{}
     // Entries realtime
-    const unsub = entriesCol(user.uid).onSnapshot(snap=>{
-      setRawEntries(snap.docs.map(d=>({...d.data(),id:d.id})));
-    });
+    const unsub = entriesCol(user.uid).onSnapshot(
+      snap=>{ setRawEntries(snap.docs.map(d=>({...d.data(),id:d.id}))); },
+      err=>{ console.error('Firestore read error:',err); setToast({msg:'Erreur Firestore: '+err.code,ok:false}); }
+    );
     // Migration localStorage → Firebase (silencieuse, une seule fois)
     const leg = legacyEntries();
     if(leg.length>0 && !localStorage.getItem('profitdash_migrated')){
@@ -1022,8 +1023,10 @@ function Dashboard({user}) {
 
   // ── Firestore write helpers ──
   const rawOf = ({id,date,product,ca,pub,cogs,clics,cpc,ventes,notes})=>({id:String(id),date,product:product||'',ca:+ca||0,pub:+pub||0,cogs:+cogs||0,clics:+clics||0,cpc:+cpc||0,ventes:+ventes||0,notes:notes||''});
-  const fsSet = entry => entriesCol(user.uid).doc(String(entry.id)).set(rawOf(entry));
-  const fsDel = id => entriesCol(user.uid).doc(String(id)).delete();
+  const fsSet = entry => entriesCol(user.uid).doc(String(entry.id)).set(rawOf(entry))
+    .catch(err=>{ setToast({msg:'Erreur sauvegarde: '+err.code,ok:false}); console.error('fsSet',err); });
+  const fsDel = id => entriesCol(user.uid).doc(String(id)).delete()
+    .catch(err=>{ setToast({msg:'Erreur suppression: '+err.code,ok:false}); console.error('fsDel',err); });
 
   const save = ()=>{
     if(!form.date||!form.ca){setToast({msg:'Date et CA requis.',ok:false});return;}
