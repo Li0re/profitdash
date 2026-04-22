@@ -660,7 +660,7 @@
       </div>
       <div>
         <div class="alert-modal-title">Supprimer les entrées ?</div>
-        <div class="alert-modal-desc">Vous êtes sur le point d'effacer définitivement toutes les données du dashboard enregistrées localement. <strong>Cette action est irréversible.</strong></div>
+        <div class="alert-modal-desc">Vous êtes sur le point d'effacer définitivement toutes vos entrées dans Firebase. <strong>Cette action est irréversible.</strong></div>
       </div>
     </div>
     <div class="alert-modal-btns">
@@ -820,13 +820,26 @@ function showDangerModal() { document.getElementById('danger-modal').classList.a
 function hideDangerModal()  { document.getElementById('danger-modal').classList.remove('active'); }
 
 async function clearAllData() {
-  if (!currentUser) return;
-  const snap = await entriesCol(currentUser.uid).get();
-  const batch = fbDb.batch();
-  snap.docs.forEach(d => batch.delete(d.ref));
-  await batch.commit();
-  hideDangerModal();
-  showToast('Toutes les données ont été supprimées.', true);
+  if (!currentUser) { showToast('Non connecté.', true); return; }
+  try {
+    const snap = await entriesCol(currentUser.uid).get();
+    if (snap.empty) { hideDangerModal(); showToast('Aucune entrée à supprimer.'); return; }
+    // Firestore batch max 500 docs
+    const chunks = [];
+    let batch = fbDb.batch(), count = 0;
+    snap.docs.forEach(d => {
+      batch.delete(d.ref);
+      count++;
+      if (count === 500) { chunks.push(batch); batch = fbDb.batch(); count = 0; }
+    });
+    if (count > 0) chunks.push(batch);
+    await Promise.all(chunks.map(b => b.commit()));
+    hideDangerModal();
+    showToast('Toutes les données ont été supprimées.', true);
+  } catch(e) {
+    showToast('Erreur : ' + e.message, true);
+    console.error('clearAllData', e);
+  }
 }
 
 /* ═══ INJECT TEST DATA ═══ */
