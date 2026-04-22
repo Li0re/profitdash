@@ -196,7 +196,48 @@
     .cal-result{font-size:11px;color:var(--em);font-weight:600;text-align:center;margin-top:5px}
     /* KPI */
     .krow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
-    @media(max-width:700px){.krow{grid-template-columns:1fr}}
+    @media(max-width:700px){.krow{grid-template-columns:1fr 1fr}}
+    /* TODAY CARD */
+    .today-card{background:linear-gradient(135deg,rgba(16,185,129,.07),rgba(129,140,248,.05));border:1px solid rgba(16,185,129,.22);border-radius:var(--rl);padding:16px 18px;margin-bottom:14px}
+    .today-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .today-stat{display:flex;flex-direction:column;gap:3px}
+    .today-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3)}
+    .today-val{font-size:19px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+    @media(max-width:600px){.today-grid{grid-template-columns:1fr 1fr}}
+    /* MOBILE */
+    @media(max-width:768px){
+      .nav{padding:0 12px}
+      .nav-r .nlink:not(.act){display:none}
+      .chip{display:none}
+      .nav-r{gap:5px}
+      .main{padding:10px 10px 80px}
+      .layout{grid-template-columns:1fr!important;gap:10px}
+      .layout > div:first-child{position:relative!important;top:0!important}
+      .krow{grid-template-columns:1fr 1fr!important}
+      .kcard{padding:14px 16px}
+      .kval{font-size:22px!important}
+      .kico{width:30px!important;height:30px!important}
+      .cstack{gap:10px}
+      .ccard{border-radius:14px}
+      .rec-grid{grid-template-columns:1fr 1fr!important}
+      .tp-row{grid-template-columns:1fr 1fr 1fr!important}
+      .tp-row > div:nth-child(3),.tp-row > div:nth-child(5){display:none}
+      .goal-card{padding:14px}
+      .kpi-tip{display:none}
+      .tbar{flex-wrap:wrap;gap:5px}
+      .search-inp{width:100%!important;max-width:100%!important}
+      .ph-row{flex-direction:column;gap:6px}
+      h1.pht{font-size:18px!important}
+      .hm-grid{grid-template-rows:repeat(7,10px)!important}
+      .hm-cell{width:10px!important;height:10px!important}
+    }
+    @media(max-width:480px){
+      .krow{grid-template-columns:1fr!important}
+      .today-grid{grid-template-columns:1fr 1fr}
+      .fg{grid-template-columns:1fr}
+      .full{grid-column:1}
+      .kcard:hover{transform:none}
+    }
     .kcard{background:var(--sf);border:1px solid var(--bd2);border-radius:var(--rl);
       padding:20px 22px;position:relative;overflow:hidden;transition:all .3s cubic-bezier(0.16,1,0.3,1)}
     .kcard:hover{transform:translateY(-4px);box-shadow:0 15px 40px rgba(0,0,0,.45);border-color:rgba(255,255,255,0.25)}
@@ -1373,9 +1414,15 @@ function Dashboard({user}) {
     return totalClics>0 ? totalPub/totalClics : 0;
   },[filtered]);
 
-  // Projection fin de mois (si period=month)
+  // Today card stats
+  const todayStats = useMemo(()=>{
+    const td=toDay(), yd=dBack(1);
+    return { t: rows.find(r=>r.date===td)||null, y: rows.find(r=>r.date===yd)||null };
+  },[rows]);
+
+  // Projection fin de mois (toutes périodes)
   const projection = useMemo(()=>{
-    if(period!=='month' || activeDays===0) return null;
+    if(activeDays===0) return null;
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
     const elapsed = now.getDate();
@@ -1667,6 +1714,39 @@ function Dashboard({user}) {
                 <div className="goal-meta">
                   <span>{fmtEUR(kpis.ca)} / {fmtEUR(targetCA)}</span>
                   <span>{kpis.ca>=targetCA?'✓ Atteint':`Reste ${fmtEUR(Math.max(0,targetCA-kpis.ca))}`}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Today card */}
+            {todayStats.t && (
+              <div className="today-card fu fu2">
+                <div className="clbl" style={{marginBottom:10}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--em)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Aujourd'hui · {dfmt(toDay())}
+                  {todayStats.y && <span style={{marginLeft:'auto',fontSize:10,color:'var(--tx3)',fontWeight:400,textTransform:'none',letterSpacing:0}}>vs hier</span>}
+                </div>
+                <div className="today-grid">
+                  <div className="today-stat">
+                    <div className="today-lbl">CA</div>
+                    <div className="today-val g">{fmtEUR(todayStats.t.ca)}</div>
+                    {todayStats.y && <DeltaBadge cur={todayStats.t.ca} prv={todayStats.y.ca}/>}
+                  </div>
+                  <div className="today-stat">
+                    <div className="today-lbl">Profit Net</div>
+                    <div className={`today-val ${todayStats.t.profit>=0?'g':'r'}`}>{fmtEUR(todayStats.t.profit)}</div>
+                    {todayStats.y && <DeltaBadge cur={todayStats.t.profit} prv={todayStats.y.profit}/>}
+                  </div>
+                  <div className="today-stat">
+                    <div className="today-lbl">ROAS</div>
+                    <div className={`today-val ${todayStats.t.roas>=cfg.roasGood?'g':todayStats.t.roas>=cfg.roasMin?'o':'r'}`}>{fmtN(todayStats.t.roas,2)}×</div>
+                    {todayStats.y && <DeltaBadge cur={todayStats.t.roas} prv={todayStats.y.roas}/>}
+                  </div>
+                  <div className="today-stat">
+                    <div className="today-lbl">Pub</div>
+                    <div className="today-val o">{fmtEUR(todayStats.t.pub)}</div>
+                    {todayStats.y && <DeltaBadge cur={todayStats.t.pub} prv={todayStats.y.pub} invert={true}/>}
+                  </div>
                 </div>
               </div>
             )}
